@@ -334,14 +334,28 @@
     el('stickerImg').src = 'assets/par.png'; // standaard PAR zichtbaar
   }
 
-  // Create / Save game (host)
-  el('createGameBtn').onclick = async ()=>{
+// BOVENIN, voeg helper toe
+async function ensureAuth() {
+  if (uid) return uid;
+  return new Promise(resolve => {
+    const stop = onAuthStateChanged(auth, (user) => {
+      if (user) { uid = user.uid; stop(); resolve(uid); }
+    });
+  });
+}
+
+// ...
+
+el('createGameBtn').onclick = async ()=>{
+  try {
+    await ensureAuth(); // <-- wacht tot uid er is
     const hostName = el('pName').value.trim() || 'Host';
     const name = el('fName').value.trim() || 'Golfwedstrijd';
     const teeTime = el('fTime').value || new Date().toISOString();
     const flight = el('fFlight').value;
     const range  = el('fRange').value;
     const holes  = Object.keys(holesData).length?holesData:blankHoles();
+
     const g = {
       name, teeTime, flight, holeRange:range, holes,
       hostUid: uid, createdAt: serverTimestamp()
@@ -349,12 +363,18 @@
     const id = gameId || crypto.randomUUID().replace(/-/g,'').slice(0,8);
     await setDoc(doc(db,'games',id), g, {merge:true});
     gameId = id;
-    // ensure host player exists
-    await setDoc(doc(db,'games',id,'players',uid), {name:hostName, handicap: Number(el('pHcp').value||0), joinedAt: serverTimestamp()}, {merge:true});
+    await setDoc(doc(db,'games',id,'players',uid),
+      {name:hostName, handicap: Number(el('pHcp').value||0), joinedAt: serverTimestamp()},
+      {merge:true}
+    );
     await setDoc(doc(db,'games',id,'scores',uid), {holes:{}, totals:{}},{merge:true});
-    alert(`Game opgeslagen: ${id}`);
     history.replaceState(null,'',`?game=${id}`);
-  };
+    alert(`Game opgeslagen: ${id}`);
+  } catch (err) {
+    console.error(err);
+    alert(`Opslaan mislukt: ${err.code || ''} ${err.message || err}`);
+  }
+};
 
   el('copyInvite').onclick = async ()=>{
     if(!gameId){ alert('Eerst spel opslaan.'); return; }
