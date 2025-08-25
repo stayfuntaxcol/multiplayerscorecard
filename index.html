@@ -200,24 +200,33 @@
 
 <canvas id="confetti"></canvas>
 
-<!-- Firebase (modular v9) -->
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-  import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-  import { getFirestore, doc, setDoc, getDoc, onSnapshot, updateDoc, serverTimestamp, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+  // Firebase SDK's
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-analytics.js";
+  import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+  import { getFirestore, doc, setDoc, getDoc, onSnapshot, updateDoc, serverTimestamp, collection, addDoc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
-  // ==== CONFIG ====
+  // Jouw projectconfig
   const firebaseConfig = {
-    apiKey: "YOUR_KEY",
-    authDomain: "YOUR_DOMAIN",
+    apiKey: "AIzaSyBmLsJ5l3_733r3TMSMcQ3XTB7B5-lStTs",
+    authDomain: "golfcourse-mp-scorecard.firebaseapp.com",
     projectId: "golfcourse-mp-scorecard",
-    storageBucket: "YOUR_BUCKET",
-    appId: "YOUR_APPID"
+    storageBucket: "golfcourse-mp-scorecard.appspot.com",   // 👈 let op: moet .appspot.com zijn
+    messagingSenderId: "758687332564",
+    appId: "1:758687332564:web:7db1d2f2f27c3282f2e341",
+    measurementId: "G-VWFL2DN3V9"
   };
 
+  // Init
   const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
   const auth = getAuth(app);
   const db   = getFirestore(app);
+
+  // hierna volgt je bestaande code voor signInAnonymously, scorecard etc.
+</script>
+
 
   // ==== STATE ====
   let uid = null;
