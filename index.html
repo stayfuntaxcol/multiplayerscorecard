@@ -6,51 +6,40 @@
   <meta name="theme-color" content="#0e2a35" />
   <title>Golfcourse Multiplayer Scorecard</title>
   <style>
-    :root{
-      --bg:#0e2a35; --ink:#eaf8ff; --muted:#9fc0cf;
-      --panel:#133745; --panel2:#164554; --rail:#0f2f3c;
-      --accent:#f0d28a; --ok:#0ea5e9; --warn:#ef4444;
-      --good:#22c55e; --line:#092331; --btn:#1b6177; --btn2:#154a5a;
-      --touch:56px;
-    }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial}
-    .app{max-width:1100px;margin:0 auto;padding:12px;padding-bottom:calc(12px + env(safe-area-inset-bottom))}
-    .header{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-    .badge{background:#e6f5fb;color:#0b2430;border-radius:.8rem;padding:.55rem .7rem;font-weight:800}
-    .badge.dim{background:#cfeef9}
-    .spacer{flex:1}
-    .layout{display:grid;grid-template-columns:1fr;gap:12px;margin-top:8px}
-    .card{background:var(--panel);border:2px solid var(--line);border-radius:12px;padding:10px}
-    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    .tile{background:var(--panel2);border-radius:10px;padding:12px;text-align:center;font-weight:800}
-    .tile.big{font-size:60px;line-height:1.05}
-    .pill{background:#0c2f3a;border:1px solid var(--line);border-radius:8px;padding:10px;color:var(--ink);width:100%}
-    .pill.biginput{font-size:1.2rem;font-weight:900}
-    .muted{color:var(--muted);font-size:.9rem}
-    .btn{display:inline-flex;align-items:center;justify-content:center;background:var(--btn);border:2px solid var(--line);border-radius:12px;min-height:var(--touch);font-size:1.1rem;font-weight:800;color:var(--ink);padding:.6rem .8rem;cursor:pointer;user-select:none}
-    .btn:active{transform:translateY(1px)}
-    .btn.alt{background:var(--btn2)}
-    .btn.warn{background:#7f1d1d}
-    .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-    .grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
-    .sticker{position:relative;display:flex;align-items:center;justify-content:center;height:120px;background:#103947;border-radius:12px;overflow:hidden}
-    .sticker img{max-height:110px;max-width:100%}
-    .view{display:none}.view.active{display:block}
-    table{width:100%;border-collapse:collapse}
-    th,td{border:1px solid var(--line);padding:6px 8px;text-align:center}
-    th{background:#0d4152}
-    tr:nth-child(even){background:#0e3442}
-    /* sticky tabs onder */
-    .tabs.bottom{position:sticky;bottom:0;z-index:40;display:flex;gap:8px;background:linear-gradient(180deg,transparent,rgba(10,30,38,.9) 40%);padding:8px;margin:12px -12px -12px -12px}
-    .tabbtn{flex:1;background:#114356;border:2px solid var(--line);border-radius:12px;padding:12px 10px;text-align:center;font-weight:900;cursor:pointer}
-    .tabbtn.active{outline:3px solid #7dd3fc}
-    @media (max-width:900px){.tile.big{font-size:48px}}
-    #confetti{position:fixed;inset:0;pointer-events:none}
-    .tile .small{display:block;font-size:.9rem;font-weight:700;opacity:.95;margin-top:6px}
-    .loggrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-    .loggrid .cell{background:#0c2f3a;border:1px solid var(--line);border-radius:8px;padding:8px;text-align:center;font-weight:900}
+  :root{
+    --bg:#0e2a35; --ink:#eaf8ff; --muted:#9fc0cf;
+    --panel:#133745; --panel2:#164554; --line:#092331; --btn:#1b6177; --btn2:#154a5a;
+    --touch:56px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial;background:var(--bg);color:var(--ink)}
+  .app{max-width:1100px;margin:0 auto;padding:12px;padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+  .header{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .badge{background:#e6f5fb;color:#0b2430;border-radius:.8rem;padding:.55rem .7rem;font-weight:800}
+  .badge.dim{background:#cfeef9}
+  .spacer{flex:1}
+  .layout{display:grid;grid-template-columns:1fr;gap:12px;margin-top:8px}
+  .card{background:var(--panel);border:2px solid var(--line);border-radius:12px;padding:10px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .tile{background:var(--panel2);border-radius:10px;padding:12px;text-align:center;font-weight:800}
+  .tile.big{font-size:60px;line-height:1.05}
+  .pill{background:#0c2f3a;border:1px solid var(--line);border-radius:8px;padding:10px;color:var(--ink);width:100%}
+  .pill.biginput{font-size:1.2rem;font-weight:900}
+  .muted{color:var(--muted);font-size:.9rem}
+  .btn{display:inline-flex;align-items:center;justify-content:center;background:var(--btn);border:2px solid var(--line);border-radius:12px;min-height:var(--touch);font-size:1.1rem;font-weight:800;color:var(--ink);padding:.6rem .8rem;cursor:pointer;user-select:none}
+  .btn.alt{background:var(--btn2)}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+  .sticker{position:relative;display:flex;align-items:center;justify-content:center;height:140px;background:#103947;border-radius:12px;overflow:hidden}
+  .sticker img{max-height:130px;max-width:100%}
+  .loggrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+  .loggrid .cell{background:#0c2f3a;border:1px solid var(--line);border-radius:8px;padding:8px;text-align:center;font-weight:900}
+  .tabs.bottom{position:sticky;bottom:0;z-index:40;display:flex;gap:8px;background:linear-gradient(180deg,transparent,rgba(10,30,38,.9) 40%);padding:8px;margin:12px -12px -12px -12px}
+  #confetti{position:fixed;inset:0;pointer-events:none}
+  .small{display:block;font-size:.9rem;font-weight:700;opacity:.95;margin-top:6px}
+  .scoreGrid{display:grid;grid-template-columns:1fr 1.2fr;gap:10px}
+  .view{display:none}.view.active{display:block}
+  @media (max-width:900px){ .scoreGrid{grid-template-columns:1fr} }
   </style>
 </head>
 <body>
@@ -59,14 +48,12 @@
       <div id="gameTitle" class="badge">Scorecard</div>
       <div id="holeHeader" class="badge dim">H01 • Par ? • 000m</div>
       <div class="spacer"></div>
-      <button id="joinBtn" class="btn" aria-label="aanmelden">Deelnemen</button>
     </div>
 
     <div class="layout">
       <div class="card">
-        <!-- SCORE VIEW -->
+        <!-- ===== SCORE VIEW ===== -->
         <div id="view-score" class="view active">
-          <!-- naam + hcp -->
           <div class="row" style="margin-bottom:8px">
             <div>
               <div class="muted">Speler</div>
@@ -78,26 +65,24 @@
             </div>
           </div>
 
-          <!-- header tiles -->
           <div class="row">
-            <div id="holeCode" class="tile">H01
+            <div id="holeCode" class="tile">
+              H01
               <span class="small muted">Par <span id="parUnder">?</span></span>
+              <span class="small muted">Tijd <span id="timeUnder">0:00</span></span>
             </div>
-            <div id="holeDist" class="tile">000
-              <span class="small muted">Slag <span id="strokeUnder">0</span></span>
-            </div>
+            <div id="holeDist" class="tile">000</div>
           </div>
 
-          <!-- grote teller -->
-          <div id="bigScore" class="tile big">0</div>
-
-          <div class="row" style="margin-top:10px">
-            <!-- sticker vlak (alleen na finish zichtbaar) -->
-            <div class="sticker" id="stickerBox">
-              <img id="stickerImg" src="" alt="Beloning" style="display:none">
+          <div class="scoreGrid" style="margin-top:10px">
+            <div>
+              <div class="tile" style="display:flex;align-items:center;justify-content:center;font-size:42px;font-weight:900;margin-bottom:8px">
+                Slag <span id="strokeAbove" style="margin-left:6px">0</span>
+              </div>
+              <div class="sticker" id="stickerBox">
+                <img id="stickerImg" src="" alt="Beloning" style="display:none">
+              </div>
             </div>
-
-            <!-- invoer knoppen -->
             <div>
               <div class="grid5" style="margin-bottom:8px">
                 <button class="btn" data-club="D">D</button>
@@ -111,15 +96,26 @@
                 <button class="btn" data-club="W">W</button>
                 <button class="btn" data-club="P">P</button>
               </div>
+              <!-- rij 1 -->
               <div class="grid4">
                 <button class="btn alt" data-special="ball"   aria-label="nieuwe bal">⚪</button>
-                <button class="btn alt" data-special="bunker" aria-label="bunker">🏖️</button>
+                <button class="btn alt" data-special="bunker" aria-label="bunker">🏜️</button>
                 <button class="btn alt" data-special="water"  aria-label="water">💧</button>
-                <button id="flagBtn" class="btn warn" aria-label="hole klaar">⛳</button>
-              </div>
-              <div class="grid4" style="margin-top:8px">
                 <button class="btn alt" data-special="mulligan" aria-label="mulligan">🎁</button>
-                <span></span><span></span><span></span>
+              </div>
+              <!-- rij 2 -->
+              <div class="grid4" style="margin-top:8px">
+                <button class="btn alt" data-special="oob" aria-label="out of bounds">🌲</button>
+                <button class="btn alt" data-special="star" aria-label="highlight shot">⭐</button>
+                <button class="btn alt" data-special="resign" aria-label="opgegeven">🔴</button>
+                <button id="flagBtn" class="btn alt" aria-label="hole klaar" title="Hole klaar">
+                  <!-- Blauwe vlag -->
+                  <svg width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M5 3v18" stroke="#8fb3ff" stroke-width="2"/>
+                    <path d="M6 4h11l-3 3 3 3H6z" fill="#3b82f6"/>
+                    <circle cx="6" cy="20" r="2" fill="#0b2740"/>
+                  </svg>
+                </button>
               </div>
             </div>
           </div>
@@ -131,7 +127,10 @@
             </div>
             <div>
               <div class="muted" style="margin-bottom:6px">Totaal hole</div>
-              <div id="holeTotal" class="pill" style="font-size:28px">0</div>
+              <div class="pill" style="font-size:22px;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center">
+                <span id="holeTotal">0</span>
+                <span id="overPar" style="color:#9fb0ba;font-weight:800">±0</span>
+              </div>
               <div id="deltaTxt" class="muted">t.o.v. Par: 0</div>
               <div class="row" style="margin-top:8px">
                 <div class="pill">Putts: <span id="puts">0</span></div>
@@ -149,65 +148,23 @@
           </div>
         </div>
 
-        <!-- SETTINGS -->
+        <!-- ===== SETTINGS (placeholder, later uitwerken) ===== -->
         <div id="view-settings" class="view">
-          <h3>Wedstrijd aanmaken / bewerken</h3>
-          <div class="row">
-            <div>
-              <div class="muted">Naam baan</div>
-              <input id="fName" class="pill" placeholder="Baannaam">
-            </div>
-            <div>
-              <div class="muted">TeeTime</div>
-              <input id="fTime" type="datetime-local" class="pill">
-            </div>
-          </div>
-          <div class="row" style="margin-top:6px">
-            <div>
-              <div class="muted">Flight</div>
-              <select id="fFlight" class="pill"><option>A</option><option>B</option><option>C</option><option>D</option></select>
-            </div>
-            <div>
-              <div class="muted">Holes</div>
-              <select id="fRange" class="pill">
-                <option value="1-18">1–18</option>
-                <option value="1-9">1–9</option>
-                <option value="10-18">10–18</option>
-              </select>
-            </div>
-          </div>
-
-          <p class="muted" style="margin:.8rem 0 .3rem">Par & Afstand per hole</p>
-          <div id="holeEditor" class="card" style="max-height:40vh;overflow:auto"></div>
-
-          <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-            <button id="createGameBtn" class="btn">Opslaan / nieuw spel</button>
-            <button id="copyInvite" class="btn alt">Kopieer invite-link</button>
-          </div>
-
-          <hr style="border:0;border-top:1px solid var(--line);margin:12px 0">
-          <h3>Speler aanmelden</h3>
-          <div class="row">
-            <div>
-              <div class="muted">Naam</div>
-              <input id="pName" class="pill" placeholder="Jouw naam">
-            </div>
-            <div>
-              <div class="muted">Handicap</div>
-              <input id="pHcp" type="number" step="1" value="0" class="pill">
-            </div>
-          </div>
-          <button id="joinGameBtn" class="btn" style="margin-top:8px">Deelnemen</button>
+          <h3>Score Card instellingen</h3>
+          <p class="muted">(Deze pagina werken we later verder uit.)</p>
         </div>
 
-        <!-- LEADERBOARD -->
+        <!-- ===== LEADERBOARD ===== -->
         <div id="view-leader" class="view">
           <h3>Leaderboard</h3>
           <div id="leaderFull" class="card"></div>
+          <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+            <button id="endRoundBtn" class="btn">Einde ronde • Vier winnaar</button>
+          </div>
         </div>
       </div>
 
-      <!-- Bottom tabs -->
+      <!-- bottom tabs -->
       <div class="tabs bottom" role="navigation" aria-label="Tabs">
         <button class="tabbtn active" data-tab="score">SCORE</button>
         <button class="tabbtn" data-tab="leader">LEADERBOARD</button>
@@ -219,422 +176,457 @@
   <canvas id="confetti"></canvas>
 
   <script type="module">
-    /* Firebase v12 CDN */
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
-    import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-analytics.js";
-    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
-    import { getFirestore, doc, setDoc, getDoc, onSnapshot, serverTimestamp, collection, addDoc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+  import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+  import { getFirestore, doc, setDoc, getDoc, onSnapshot, serverTimestamp, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
-    /* ✅ Jouw Firebase-config */
-    const firebaseConfig = {
-      apiKey: "AIzaSyBmLsJ5l3_733r3TMSMcQ3XTB7B5-lStTs",
-      authDomain: "golfcourse-mp-scorecard.firebaseapp.com",
-      projectId: "golfcourse-mp-scorecard",
-      storageBucket: "golfcourse-mp-scorecard.appspot.com",
-      messagingSenderId: "758687332564",
-      appId: "1:758687332564:web:7db1d2f2f27c3282f2e341",
-      measurementId: "G-VWFL2DN3V9"
+  /* Firebase config (jouw project) */
+  const firebaseConfig = {
+    apiKey: "AIzaSyBmLsJ5l3_733r3TMSMcQ3XTB7B5-lStTs",
+    authDomain: "golfcourse-mp-scorecard.firebaseapp.com",
+    projectId: "golfcourse-mp-scorecard",
+    storageBucket: "golfcourse-mp-scorecard.appspot.com",
+    messagingSenderId: "758687332564",
+    appId: "1:758687332564:web:7db1d2f2f27c3282f2e341"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db   = getFirestore(app);
+
+  /* ===== SIMPLE TABS ===== */
+  const views = {
+    score: document.getElementById('view-score'),
+    leader: document.getElementById('view-leader'),
+    settings: document.getElementById('view-settings')
+  };
+  document.querySelectorAll('.tabbtn').forEach(btn=>{
+    btn.onclick=()=>{
+      document.querySelectorAll('.tabbtn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      Object.values(views).forEach(v=>v.classList.remove('active'));
+      views[btn.dataset.tab].classList.add('active');
     };
+  });
 
-    const app = initializeApp(firebaseConfig);
-    try { getAnalytics(app); } catch(e) {}
-    const auth = getAuth(app);
-    const db   = getFirestore(app);
+  /* ===== STATE ===== */
+  let uid=null;
+  let gameId = new URLSearchParams(location.search).get('game') || null;
+  let currentHole = 1;
+  let holeRange = '1-18';
+  let holesData = {}; // {1:{par,distance},...}
+  let me = null;      // {name,handicap,holes:{}}
 
-    /* ===== STATE ===== */
-    let uid = null;
-    let gameId = new URLSearchParams(location.search).get('game') || null;
-    let currentHole = 1;
-    let holeRange = "1-18";
-    let holesData = {};      // { "1": {par, distance}, ... }
-    let me = null;           // {name, handicap, holes:{}}
-    let isHost = false;
+  const el = id => document.getElementById(id);
+  const rangeBounds = ()=> holeRange==='1-9' ? [1,9] : holeRange==='10-18' ? [10,18] : [1,18];
 
-    const el = id => document.getElementById(id);
-    const views = { score: el('view-score'), leader: el('view-leader'), settings: el('view-settings') };
+  /* ===== AUTH ===== */
+  onAuthStateChanged(auth, async (user)=>{
+    if(!user){ await signInAnonymously(auth); return; }
+    uid=user.uid;
+    if(gameId) subscribeGame(gameId);
+  });
 
-    /* ===== TABS (alleen onder) ===== */
-    document.querySelectorAll('.tabbtn').forEach(b=>{
-      b.onclick = ()=>{
-        document.querySelectorAll('.tabbtn').forEach(x=>x.classList.remove('active'));
-        document.querySelectorAll(`.tabbtn[data-tab="${b.dataset.tab}"]`).forEach(x=>x.classList.add('active'));
-        Object.values(views).forEach(v=>v.classList.remove('active'));
-        views[b.dataset.tab].classList.add('active');
-        if(b.dataset.tab==='leader') renderLeaderboard();
-        if(b.dataset.tab==='settings') renderHoleEditor();
-      };
+  /* ===== HELPERS ===== */
+  function blankHoles(){ const o={}; for(let i=1;i<=18;i++) o[i]={par:4,distance:300}; return o; }
+  function mmss(sec){ const m=Math.floor(sec/60); const s=String(sec%60).padStart(2,'0'); return `${m}:${s}`; }
+
+  function defaultHole(){
+    return { strokes:[], putts:0, penalties:{ball:0,water:0,bunker:0,oob:0}, total:0, sticker:null,
+             startTs:null, endTs:null, duration:0, mulliganUsed:false, resigned:false };
+  }
+
+  function strokeState(){
+    const all=(me&&me.holes)||{}; const key=String(currentHole);
+    return JSON.parse(JSON.stringify(all[key] || defaultHole()));
+  }
+
+  async function persistHole(hstate){
+    if(!gameId||!uid) return;
+    me = me || {}; me.holes = me.holes || {};
+    me.holes[String(currentHole)] = hstate;
+    await setDoc(doc(db,'games',gameId,'scores',uid), {holes:me.holes},{merge:true});
+  }
+
+  function updateTimeUI(h){
+    const tEl = document.getElementById('timeUnder');
+    if(!tEl) return;
+    let sec=0;
+    if(h.endTs){ sec = h.duration||0; }
+    else if(h.startTs){ sec = Math.floor((Date.now()-h.startTs)/1000); }
+    tEl.textContent = mmss(sec);
+  }
+
+  function updateScoreUI(){
+    const h = strokeState();
+    el('puts').textContent      = h.putts||0;
+    el('penBall').textContent   = h.penalties?.ball||0;
+    el('penWater').textContent  = h.penalties?.water||0;
+    el('penBunker').textContent = h.penalties?.bunker||0;
+
+    const log = el('strokeLog');
+    const BLUE_FLAG_SVG = '<svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M5 3v18" stroke="#8fb3ff" stroke-width="2"/><path d="M6 4h11l-3 3 3 3H6z" fill="#3b82f6"/></svg>';
+    log.innerHTML = (h.strokes||[])
+      .slice(-16)
+      .map(s=> s==='⛳' ? `<div class="cell">${BLUE_FLAG_SVG}</div>` : `<div class="cell">${s}</div>`)
+      .join('');
+
+    const par = holesData[currentHole]?.par ?? 0;
+    el('holeTotal').textContent = h.total||0;
+    el('overPar').textContent   = ((h.total||0)-par)>0?`+${(h.total||0)-par}`:`${(h.total||0)-par}`;
+    el('deltaTxt').textContent  = `t.o.v. Par: ${(h.total||0)-par}`;
+    const sa = document.getElementById('strokeAbove'); if(sa) sa.textContent=h.total||0;
+
+    // tijd
+    updateTimeUI(h);
+
+    // sticker zichtbaar houden
+    const img = document.getElementById('stickerImg');
+    if(h.sticker){ img.src = stickerImg(h.sticker)||''; img.style.display='block'; } else { img.src=''; img.style.display='none'; }
+  }
+
+  function updateHeader(){
+    const d=holesData[currentHole]||{par:'?',distance:'000'};
+    el('holeHeader').textContent = `H${String(currentHole).padStart(2,'0')} • Par ${d.par} • ${d.distance}m`;
+    el('holeCode').innerHTML = `H${String(currentHole).padStart(2,'0')}
+      <span class="small muted">Par <span id="parUnder">${d.par??'?'}<\/span><\/span>
+      <span class="small muted">Tijd <span id="timeUnder">0:00<\/span><\/span>`;
+    el('holeDist').textContent = d.distance;
+  }
+
+  /* ===== SUBSCRIPTIONS ===== */
+  async function subscribeGame(id){
+    // game meta
+    onSnapshot(doc(db,'games',id),(snap)=>{
+      if(!snap.exists()) return;
+      const g=snap.data();
+      holeRange=g.holeRange||'1-18';
+      holesData=g.holes||blankHoles();
+      el('gameTitle').textContent = `${g.name||'Scorecard'}${g.flight?` • Flight ${g.flight}`:''}`;
+      updateHeader();
+      updateScoreUI();
     });
-
-    /* ===== AUTH ===== */
-    onAuthStateChanged(auth, async (user)=>{
-      if(!user){ await signInAnonymously(auth); return; }
-      uid = user.uid;
-      if(gameId) subscribeGame(gameId);
+    // scores (mijn doc)
+    onSnapshot(doc(db,'games',id,'scores',uid),(snap)=>{
+      if(!snap.exists()) return;
+      me = me || {}; me.holes = snap.data().holes||{};
+      updateScoreUI();
     });
-    async function ensureAuth(){
-      if(uid) return uid;
-      return new Promise(res=>{
-        const stop=onAuthStateChanged(auth,u=>{ if(u){ uid=u.uid; stop(); res(uid); } });
-      });
-    }
-
-    /* ===== RANGE HELPERS ===== */
-    const rangeBounds = ()=> holeRange==='1-9' ? [1,9] : holeRange==='10-18' ? [10,18] : [1,18];
-    function clampHoleToRange(){ const [s,e]=rangeBounds(); if(currentHole<s) currentHole=s; if(currentHole>e) currentHole=e; }
-
-    /* ===== HOLES DATA ===== */
-    function blankHoles(){ const o={}; for(let i=1;i<=18;i++) o[i]={par:4,distance:300}; return o; }
-    function renderHoleEditor(){
-      const cont = el('holeEditor'); cont.innerHTML='';
-      for(let i=1;i<=18;i++){
-        const d = holesData[i] || {par:4,distance:300};
-        const row = document.createElement('div'); row.style.marginBottom='6px';
-        row.innerHTML = `
-          <div style="display:grid;grid-template-columns:62px 1fr 1fr;gap:8px;align-items:center">
-            <div class="pill" style="font-weight:800">H${String(i).padStart(2,'0')}</div>
-            <input class="pill" data-i="${i}" data-k="par" type="number" value="${d.par}">
-            <input class="pill" data-i="${i}" data-k="distance" type="number" value="${d.distance}">
-          </div>`;
-        cont.appendChild(row);
+    // spelersnaam/hcp inline sync
+    onSnapshot(doc(db,'games',id,'players',uid),(snap)=>{
+      if(snap.exists()){
+        const p=snap.data();
+        document.getElementById('playerNameInline').value = p.name || '';
+        document.getElementById('playerHcpInline').value  = p.handicap ?? 0;
       }
-      cont.querySelectorAll('input').forEach(inp=>{
-        inp.oninput = ()=>{
-          const i=inp.dataset.i, k=inp.dataset.k;
-          holesData[i] = holesData[i] || {par:4,distance:300};
-          holesData[i][k] = Number(inp.value);
-          updateHoleHeader();
-        };
-      });
-    }
-
-    /* ===== SUBSCRIBE GAME ===== */
-    async function subscribeGame(id){
-      // game meta
-      onSnapshot(doc(db,'games',id),(snap)=>{
-        if(!snap.exists()) return;
-        const g = snap.data();
-        gameId = id;
-        holeRange = g.holeRange || "1-18";
-        holesData = g.holes || blankHoles();
-        isHost = (g.hostUid===uid);
-        el('gameTitle').textContent = `${g.name} • Flight ${g.flight}`;
-        updateHoleHeader(); renderHoleEditor(); renderLeaderboard();
-      });
-      // mijn score
-      onSnapshot(doc(db,'games',id,'scores',uid),(snap)=>{
-        if(!snap.exists()) return;
-        me = me || {};
-        me.holes = (snap.data().holes)||{};
-        renderScoreView();
-      });
-      // speler doc
-      onSnapshot(doc(db,'games',id,'players',uid),(snap)=>{
-        if(snap.exists()){
-          const p=snap.data();
-          el('playerNameInline').value = p.name || '';
-          el('playerHcpInline').value  = p.handicap ?? 0;
-        }
-      });
-      // sticker events
-      onSnapshot(collection(db,'games',id,'events'),(qs)=>{
-        qs.docChanges().forEach(ch=>{
-          if(ch.type==='added'){
-            const e=ch.doc.data();
-            toastSticker(`${e.playerName} • H${String(e.hole).padStart(2,'0')}`, e.sticker);
-          }
-        });
-      });
-    }
-
-    /* ===== HEADER / HOLE ===== */
-    function updateHoleHeader(){
-      clampHoleToRange();
-      const d = holesData[currentHole] || {par:'?',distance:'000'};
-      el('holeHeader').textContent = `H${String(currentHole).padStart(2,'0')} • Par ${d.par} • ${d.distance}m`;
-      el('holeCode').textContent   = `H${String(currentHole).padStart(2,'0')}`;
-      el('holeDist').textContent   = d.distance;
-
-      // par onder tegel
-      const parUnder = document.getElementById('parUnder');
-      if(parUnder) parUnder.textContent = d.par ?? '?';
-
-      // zet sticker (indien al verdiend) of leeg
-      const s = (me && me.holes && me.holes[String(currentHole)]) || {};
-      const img = document.getElementById('stickerImg');
-      if(s.sticker){ img.src = stickerImg(s.sticker)||''; img.style.display='block'; }
-      else { img.src=''; img.style.display='none'; }
-    }
-
-    /* ===== CREATE / JOIN ===== */
-    el('createGameBtn').onclick = async ()=>{
-      try{
-        await ensureAuth();
-        const hostName = el('pName').value.trim() || 'Host';
-        const name     = el('fName').value.trim() || 'Golfwedstrijd';
-        const teeTime  = el('fTime').value || new Date().toISOString();
-        const flight   = el('fFlight').value;
-        const range    = el('fRange').value;
-        const holes    = Object.keys(holesData).length?holesData:blankHoles();
-        const id       = gameId || crypto.randomUUID().replace(/-/g,'').slice(0,8);
-
-        await setDoc(doc(db,'games',id),{
-          name, teeTime, flight, holeRange:range, holes,
-          hostUid: uid, createdAt: serverTimestamp()
-        }, {merge:true});
-
-        await setDoc(doc(db,'games',id,'players',uid),
-          {name:hostName, handicap:Number(el('pHcp').value||0), joinedAt: serverTimestamp()},
-          {merge:true});
-
-        await setDoc(doc(db,'games',id,'scores',uid), {holes:{}, totals:{}}, {merge:true});
-
-        gameId=id; history.replaceState(null,'',`?game=${id}`);
-        alert(`Game opgeslagen: ${id}`);
-      }catch(e){ alert(`Opslaan mislukt: ${e.code||''} ${e.message||e}`); }
-    };
-
-    el('copyInvite').onclick = async ()=>{
-      if(!gameId){ alert('Eerst spel opslaan.'); return; }
-      await navigator.clipboard.writeText(`${location.origin}${location.pathname}?game=${gameId}`);
-      alert('Invite-link gekopieerd!');
-    };
-
-    el('joinGameBtn').onclick = async ()=>{
-      if(!gameId){ alert('Geen game-id.'); return; }
-      const name = el('pName').value.trim();
-      const hcp  = Number(el('pHcp').value||0);
-      if(!name){ alert('Naam is verplicht'); return; }
-      await setDoc(doc(db,'games',gameId,'players',uid), {name, handicap:hcp, joinedAt: serverTimestamp()}, {merge:true});
-      await setDoc(doc(db,'games',gameId,'scores',uid),   {holes:{}, totals:{}}, {merge:true});
-      el('playerNameInline').value = name;
-      el('playerHcpInline').value  = hcp;
-      me = {name, handicap:hcp};
-      alert('Aangemeld!');
-    };
-
-    // inline edits
-    el('playerNameInline').addEventListener('change', async ()=>{
-      if(!gameId||!uid) return;
-      const name = el('playerNameInline').value.trim();
-      await setDoc(doc(db,'games',gameId,'players',uid), {name}, {merge:true});
     });
-    el('playerHcpInline').addEventListener('change', async ()=>{
-      if(!gameId||!uid) return;
-      const handicap = Number(el('playerHcpInline').value||0);
-      await setDoc(doc(db,'games',gameId,'players',uid), {handicap}, {merge:true});
-    });
+    // event meldingen (stickers) kunnen hier ook geluisterd worden indien gewenst
+  }
 
-    el('joinBtn').onclick = ()=>document.querySelector('.tabbtn[data-tab="settings"]').click();
+  /* ===== STICKERS ===== */
+  function stickerFor(total,par,extra){
+    const d=total-par;
+    if(total===8) return 'snowman';
+    if(extra.putts>=3) return 'three-putt';
+    if(d<=-3) return 'albatross';
+    if(d===-2) return 'eagle';
+    if(d===-1) return 'birdie';
+    if(d===0)  return 'par';
+    if(d===1)  return 'bogey';
+    if(d===2)  return 'double-bogey';
+    if(d>=3)   return 'triple-bogey';
+    return null;
+  }
+  const stickerImg = k=>({
+    'albatross':'assets/albatross.png',
+    'eagle':'assets/eagle.png',
+    'birdie':'assets/birdie.png',
+    'par':'assets/par.png',
+    'bogey':'assets/bogey.png',
+    'double-bogey':'assets/double-bogey.png',
+    'triple-bogey':'assets/triple-bogey.png',
+    'snowman':'assets/snowman.png',
+    'three-putt':'assets/three-putt.png',
+    'breakfast':'assets/breakfast.png',
+    'mulligan':'assets/mulligan.png'
+  })[k];
 
-    /* ===== SCORE ===== */
-    const strokeState = ()=>{
-      const all = (me && me.holes) || {};
-      const h = all[String(currentHole)] || {strokes:[], putts:0, penalties:{ball:0,water:0,bunker:0}, total:0, sticker:null};
-      return JSON.parse(JSON.stringify(h));
-    };
+  function confettiRain(ms=5000){
+    const c=document.getElementById('confetti'),ctx=c.getContext('2d');
+    let W=c.width=innerWidth,H=c.height=innerHeight;
+    let parts=Array.from({length:180},()=>({x:Math.random()*W,y:-20-Math.random()*H,r:2+Math.random()*4,vy:2+Math.random()*3,vx:(Math.random()-.5)*1.2}));
+    const end=performance.now()+ms;
+    (function tick(){
+      ctx.clearRect(0,0,W,H);
+      parts.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; if(p.y>H+10){ p.y=-10; p.x=Math.random()*W; }
+        ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fillStyle=`hsl(${Math.random()*360},100%,65%)`; ctx.fill(); });
+      if(performance.now()<end) requestAnimationFrame(tick); else ctx.clearRect(0,0,W,H);
+    })();
+    addEventListener('resize',()=>{W=c.width=innerWidth; H=c.height=innerHeight;},{once:true});
+  }
+  function bigSticker(text,key){
+    const src = stickerImg(key); if(!src) return;
+    const overlay=document.createElement('div');
+    overlay.style.position='fixed'; overlay.style.inset='0'; overlay.style.background='rgba(0,0,0,.6)';
+    overlay.style.display='flex'; overlay.style.alignItems='center'; overlay.style.justifyContent='center'; overlay.style.zIndex=10000;
+    const box=document.createElement('div');
+    box.style.background='rgba(8,26,32,.95)'; box.style.border='3px solid #0a2732'; box.style.borderRadius='16px';
+    box.style.padding='16px 20px'; box.style.display='flex'; box.style.flexDirection='column'; box.style.alignItems='center'; box.style.gap='10px';
+    box.innerHTML=`<img src="${src}" style="height:120px"/><div style="font-size:24px;font-weight:900">${text}</div><div class="muted" style="font-size:16px">${key}</div>`;
+    overlay.appendChild(box); document.body.appendChild(overlay);
+    setTimeout(()=>overlay.remove(), 4000);
+  }
 
-    function renderScoreView(){
-      if(!Object.keys(holesData||{}).length) return;
-      const h = strokeState();
-      el('puts').textContent     = h.putts||0;
-      el('penBall').textContent  = h.penalties?.ball||0;
-      el('penWater').textContent = h.penalties?.water||0;
-      el('penBunker').textContent= h.penalties?.bunker||0;
+  // 30s Royal confetti met emoji + slingers
+  function royalConfetti(durationMs=30000){
+    const c = document.getElementById('confetti');
+    const ctx = c.getContext('2d');
+    let W = c.width = innerWidth, H = c.height = innerHeight;
 
-      const log = document.getElementById('strokeLog');
-      if(log){ log.innerHTML = (h.strokes||[]).slice(-16).map(s=>`<div class="cell">${s}</div>`).join(''); }
+    const EMOJI = ['👑','⭐','🎉','🎊'];
+    const pieces = [];
 
-      el('bigScore').textContent = h.total||0;
-      const par = holesData[currentHole]?.par ?? 0;
-      el('holeTotal').textContent= h.total||0;
-      el('deltaTxt').textContent = `t.o.v. Par: ${(h.total||0)-par}`;
-      const su=document.getElementById('strokeUnder'); if(su) su.textContent=h.total||0;
-
-      // sticker (als deze hole al is afgerond)
-      const img=document.getElementById('stickerImg');
-      const sHole=(me&&me.holes&&me.holes[String(currentHole)])||{};
-      if(sHole.sticker){ img.src=stickerImg(sHole.sticker)||''; img.style.display='block'; }
-      else { img.src=''; img.style.display='none'; }
+    // Emoji “confetti”
+    for(let i=0;i<220;i++){
+      pieces.push({
+        type:'emoji',
+        char: EMOJI[Math.floor(Math.random()*EMOJI.length)],
+        x: Math.random()*W,
+        y: -20 - Math.random()*H,
+        vy: 1.5 + Math.random()*2.5,
+        vx: (Math.random()-.5)*1.2,
+        rot: Math.random()*Math.PI*2,
+        rSpeed: (Math.random()-.5)*0.04,
+        size: 18 + Math.random()*16
+      });
+    }
+    // Slingers (stroken)
+    for(let i=0;i<60;i++){
+      pieces.push({
+        type:'streamer',
+        x: Math.random()*W,
+        y: -40 - Math.random()*H,
+        vy: 1.2 + Math.random()*1.8,
+        vx: (Math.random()-.5)*0.6,
+        w: 6+Math.random()*10,
+        h: 60+Math.random()*120,
+        hue: Math.floor(Math.random()*360),
+        alpha: .8
+      });
     }
 
-    function addStroke(kind){
-      const s = strokeState();
-      const countable=['D','W','P','3','4','5','6','7','8','9'];
+    const end = performance.now()+durationMs;
+    function step(){
+      ctx.clearRect(0,0,W,H);
+      for(const p of pieces){
+        p.x += p.vx; p.y += p.vy;
 
-      if(kind==='P'){ s.putts=(s.putts||0)+1; }
-      if(countable.includes(kind)){ s.strokes.push(kind); s.total=(s.total||0)+1; }
-
-      if(kind==='ball'){   s.penalties.ball=(s.penalties.ball||0)+1;   s.strokes.push('⚪'); s.total=(s.total||0)+1; }
-      if(kind==='water'){  s.penalties.water=(s.penalties.water||0)+1; s.strokes.push('💧'); s.total=(s.total||0)+1; }
-      if(kind==='bunker'){ s.penalties.bunker=(s.penalties.bunker||0)+1; s.strokes.push('🏖️'); /* geen straf */ }
-
-      if(kind==='mulligan'){
-        for(let i=s.strokes.length-1;i>=0;i--){
-          const sym=s.strokes[i];
-          if(countable.includes(sym) || sym==='⚪' || sym==='💧'){
-            s.strokes.splice(i,1);
-            s.total = Math.max(0,(s.total||0)-1);
-            break;
-          }
-        }
-        s.strokes.push('🎁');
-      }
-      persistHole(s);
-    }
-
-    async function persistHole(hstate){
-      if(!gameId){ alert('Geen game gekozen'); return; }
-      me = me || {}; me.holes = me.holes || {};
-      me.holes[String(currentHole)] = hstate;
-      renderScoreView();
-      await setDoc(doc(db,'games',gameId,'scores',uid), {holes: me.holes},{merge:true});
-    }
-
-    document.querySelectorAll('[data-club]').forEach(b=>b.onclick=()=>addStroke(b.dataset.club));
-    document.querySelectorAll('[data-special]').forEach(b=>b.onclick=()=>addStroke(b.dataset.special));
-
-    // hole klaar -> sticker + event + confetti (Birdie/Eagle/Par)
-    el('flagBtn').onclick = async ()=>{
-      const s = strokeState();
-      if(!s.strokes.includes('🏁')) s.strokes.push('🏁');
-      const par = holesData[currentHole]?.par ?? 0;
-      const key = stickerFor(s.total, par, s);
-      if(key){
-        s.sticker = key;
-        const img = stickerImg(key); const box=document.getElementById('stickerImg');
-        if(img){ box.src = img; box.style.display='block'; }
-        if(key==='birdie' || key==='eagle' || key==='par') confettiRain(5000);
-        const playerName = (await getDoc(doc(db,'games',gameId,'players',uid))).data()?.name || 'Player';
-        await addDoc(collection(db,'games',gameId,'events'), {type:'sticker', hole:currentHole, playerName, sticker:key, at:serverTimestamp()});
-      }
-      await persistHole(s);
-      const [sH,eH]=rangeBounds();
-      if(currentHole<eH){ currentHole++; updateHoleHeader(); renderScoreView(); }
-    };
-
-    // navigatie
-    el('prevHole').onclick = ()=>{ const[sH,_eH]=rangeBounds(); if(currentHole>sH){ currentHole--; updateHoleHeader(); renderScoreView(); } };
-    el('nextHole').onclick = ()=>{ const[_sH,eH]=rangeBounds(); if(currentHole<eH){ currentHole++; updateHoleHeader(); renderScoreView(); } };
-
-    /* ===== STICKERS ===== */
-    function stickerFor(total, par, extra){
-      const d = total - par;
-      if(total === 8) return 'snowman';
-      if(extra.putts >= 3) return 'three-putt';
-      if(d <= -3) return 'albatross';
-      if(d === -2) return 'eagle';
-      if(d === -1) return 'birdie';
-      if(d === 0)  return 'par';
-      if(d === 1)  return 'bogey';
-      if(d === 2)  return 'double-bogey';
-      if(d >= 3)   return 'triple-bogey';
-      return null;
-    }
-    const stickerImg = k=>({
-      'albatross':'assets/albatross.png',
-      'eagle':'assets/eagle.png',
-      'birdie':'assets/birdie.png',
-      'par':'assets/par.png',
-      'bogey':'assets/bogey.png',
-      'double-bogey':'assets/double-bogey.png',
-      'triple-bogey':'assets/triple-bogey.png',
-      'snowman':'assets/snowman.png',
-      'three-putt':'assets/three-putt.png',
-      'breakfast':'assets/breakfast.png',
-      'mulligan':'assets/mulligan.png'
-    })[k];
-
-    /* ===== LEADERBOARD realtime ===== */
-    let unsubLBPlayers=null, unsubLBScores=null;
-    function renderLeaderboard(){
-      if(!gameId) return;
-      getDoc(doc(db,'games',gameId)).then(gSnap=>{
-        const g=gSnap.data()||{}; holeRange=g.holeRange||'1-18';
-        const [start,end]=rangeBounds();
-
-        const heads=Array.from({length:end-start+1},(_,i)=>start+i).map(h=>`<th>H${String(h).padStart(2,'0')}</th>`).join('');
-        el('leaderFull').innerHTML = `
-          <table>
-            <thead>
-              <tr><th>Speler</th>${heads}<th>Front</th><th>Back</th><th>Totaal</th><th>Net (hcp)</th></tr>
-            </thead>
-            <tbody id="lb-body"></tbody>
-          </table>
-        `;
-        const body = el('lb-body');
-        const players = new Map();
-        const scores  = new Map();
-
-        function draw(){
-          body.innerHTML='';
-          players.forEach((p,id)=>{
-            const s = scores.get(id)||{holes:{}};
-            let tF=0,tB=0, tds='';
-            for(let h=start;h<=end;h++){
-              const sc = s.holes?.[String(h)]?.total || 0;
-              tds += `<td>${sc||''}</td>`;
-              if(h<=9) tF+=sc; else tB+=sc;
-            }
-            const gross=tF+tB, net=gross-(p.handicap||0);
-            body.insertAdjacentHTML('beforeend', `<tr><td>${p.name||'Player'}</td>${tds}<td>${tF||''}</td><td>${tB||''}</td><td>${gross||''}</td><td>${net||''}</td></tr>`);
-          });
+        if(p.type==='emoji'){
+          p.rot += p.rSpeed;
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.rot);
+          ctx.font = `${p.size}px system-ui, Apple Color Emoji, Segoe UI Emoji`;
+          ctx.textAlign='center'; ctx.textBaseline='middle';
+          ctx.fillText(p.char, 0, 0);
+          ctx.restore();
+        }else{
+          // streamer
+          ctx.save();
+          ctx.globalAlpha = p.alpha;
+          ctx.fillStyle = `hsl(${p.hue}, 85%, 60%)`;
+          ctx.translate(p.x, p.y);
+          ctx.rotate((p.x+p.y)/200);
+          ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+          ctx.restore();
         }
 
-        unsubLBPlayers && unsubLBPlayers();
-        unsubLBScores  && unsubLBScores();
-
-        unsubLBPlayers = onSnapshot(collection(db,'games',gameId,'players'), snap=>{
-          snap.docChanges().forEach(ch=>{
-            if(ch.type==='removed') players.delete(ch.doc.id);
-            else players.set(ch.doc.id, ch.doc.data());
-          });
-          draw();
-        });
-        unsubLBScores = onSnapshot(collection(db,'games',gameId,'scores'), snap=>{
-          snap.docChanges().forEach(ch=>{
-            if(ch.type==='removed') scores.delete(ch.doc.id);
-            else scores.set(ch.doc.id, ch.doc.data());
-          });
-          draw();
-        });
-      });
-    }
-
-    /* ===== UI helpers ===== */
-    function toastSticker(text, key){
-      const src = stickerImg(key); if(!src) return;
-      const d = document.createElement('div');
-      d.style.position='fixed'; d.style.right='12px'; d.style.bottom='12px';
-      d.style.background='rgba(8,26,32,.92)'; d.style.border='2px solid #0a2732';
-      d.style.borderRadius='12px'; d.style.padding='8px'; d.style.display='flex';
-      d.style.alignItems='center'; d.style.gap='8px'; d.style.zIndex=9999;
-      d.innerHTML = `<img src="${src}" style="height:56px;border-radius:8px"/>
-        <div><div style="font-weight:900">${text}</div><div class="muted">${key}</div></div>`;
-      document.body.appendChild(d);
-      setTimeout(()=>d.remove(), 4000);
-    }
-
-    function confettiRain(ms=5000){
-      const c=document.getElementById('confetti'), ctx=c.getContext('2d');
-      let W=c.width=innerWidth, H=c.height=innerHeight;
-      let parts = Array.from({length:180}, ()=>({x:Math.random()*W,y:-20-Math.random()*H,r:2+Math.random()*4,vy:2+Math.random()*3,vx:(Math.random()-.5)*1.2}));
-      const end=performance.now()+ms;
-      (function tick(){
+        if(p.y > H + 50){
+          p.y = -50;
+          p.x = Math.random()*W;
+        }
+      }
+      if(performance.now()<end){
+        requestAnimationFrame(step);
+      }else{
         ctx.clearRect(0,0,W,H);
-        parts.forEach(p=>{
-          p.x+=p.vx; p.y+=p.vy;
-          if(p.y>H+10){ p.y=-10; p.x=Math.random()*W; }
-          ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
-          ctx.fillStyle=`hsl(${Math.random()*360},100%,65%)`; ctx.fill();
-        });
-        if(performance.now()<end) requestAnimationFrame(tick); else ctx.clearRect(0,0,W,H);
-      })();
-      addEventListener('resize',()=>{ W=c.width=innerWidth; H=c.height=innerHeight; },{once:true});
+      }
+    }
+    step();
+    addEventListener('resize', ()=>{ W=c.width=innerWidth; H=c.height=innerHeight; }, {once:true});
+  }
+
+  function bigWinnerOverlay(name){
+    const overlay = document.createElement('div');
+    overlay.style.position='fixed';
+    overlay.style.inset='0';
+    overlay.style.background='rgba(0,0,0,.55)';
+    overlay.style.backdropFilter='blur(2px)';
+    overlay.style.display='flex';
+    overlay.style.flexDirection='column';
+    overlay.style.alignItems='center';
+    overlay.style.justifyContent='center';
+    overlay.style.gap='12px';
+    overlay.style.zIndex=10050;
+
+    const box = document.createElement('div');
+    box.style.background='rgba(8,26,32,.97)';
+    box.style.border='3px solid #0a2732';
+    box.style.borderRadius='18px';
+    box.style.padding='18px 22px';
+    box.style.textAlign='center';
+    box.style.maxWidth='90vw';
+
+    box.innerHTML = `
+      <div style="font-size:54px;line-height:1.1">👑⭐🎉🎊</div>
+      <div style="font-size:26px;font-weight:900;margin-top:6px">Gefeliciteerd ${name}!</div>
+      <div class="muted" style="font-size:18px;margin-top:4px">Je bent de koning van deze ronde!</div>
+      <div style="font-size:18px;margin-top:8px">Je hebt wel een heerlijk koud biertje verdiend!</div>
+      <div style="font-size:44px;margin-top:8px">🍻</div>
+    `;
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+    setTimeout(()=> overlay.remove(), 8000);
+  }
+
+  /* ===== SCORE INTERACTIES ===== */
+  function addStroke(kind){
+    const s = strokeState();
+    const countable=['D','W','P','3','4','5','6','7','8','9'];
+
+    if(kind==='P'){ s.putts=(s.putts||0)+1; }
+
+    if(countable.includes(kind)){
+      if(!s.startTs) s.startTs = Date.now(); // start timer bij eerste slag
+      s.strokes.push(kind); s.total=(s.total||0)+1;
     }
 
-    /* ===== INIT ===== */
-    holesData = blankHoles();
-    renderHoleEditor(); updateHoleHeader(); renderScoreView();
+    if(kind==='ball'){  s.penalties.ball=(s.penalties.ball||0)+1;  s.strokes.push('⚪'); s.total=(s.total||0)+1; if(!s.startTs) s.startTs=Date.now(); }
+    if(kind==='water'){ s.penalties.water=(s.penalties.water||0)+1; s.strokes.push('💧'); s.total=(s.total||0)+1; if(!s.startTs) s.startTs=Date.now(); }
+    if(kind==='bunker'){ s.penalties.bunker=(s.penalties.bunker||0)+1; s.strokes.push('🏜️'); /* geen straf */ }
+
+    if(kind==='oob'){ s.penalties.oob=(s.penalties.oob||0)+1; s.strokes.push('🌲'); s.total=(s.total||0)+1; if(!s.startTs) s.startTs=Date.now(); }
+    if(kind==='star'){ s.strokes.push('⭐'); }
+    if(kind==='resign'){ s.resigned=true; s.strokes.push('🔴'); }
+
+    if(kind==='mulligan'){
+      if(s.mulliganUsed){ alert('Mulligan al gebruikt op deze hole.'); return; }
+      // altijd de direct vorige slag terugdraaien (D/W/P/3–9/⚪/💧)
+      const reversible=['D','W','P','3','4','5','6','7','8','9','⚪','💧'];
+      if(s.strokes.length){
+        const last = s.strokes[s.strokes.length-1];
+        if(reversible.includes(last)){
+          s.strokes.pop();
+          s.total = Math.max(0,(s.total||0)-1);
+        }else{
+          for(let i=s.strokes.length-1;i>=0;i--){
+            if(reversible.includes(s.strokes[i])){ s.strokes.splice(i,1); s.total=Math.max(0,(s.total||0)-1); break; }
+          }
+        }
+      }
+      s.mulliganUsed=true; s.strokes.push('🎁');
+    }
+
+    // UI bijwerken + bewaren
+    me = me || {}; me.holes = me.holes || {}; me.holes[String(currentHole)] = s;
+    updateScoreUI();
+    persistHole(s);
+  }
+
+  // bind knoppen
+  document.querySelectorAll('[data-club]').forEach(b=>b.onclick=()=>addStroke(b.dataset.club));
+  document.querySelectorAll('[data-special]').forEach(b=>b.onclick=()=>addStroke(b.dataset.special));
+
+  // vlag = hole klaar
+  document.getElementById('flagBtn').onclick = async ()=>{
+    const s = strokeState();
+    if(!s.strokes.includes('⛳')) s.strokes.push('⛳');
+    if(!s.startTs) s.startTs = Date.now();
+    if(!s.endTs){ s.endTs = Date.now(); s.duration = Math.floor((s.endTs - s.startTs)/1000); }
+
+    const par = holesData[currentHole]?.par ?? 0;
+    const key = stickerFor(s.total, par, s);
+    if(key){
+      s.sticker=key;
+      const img=document.getElementById('stickerImg'); const src=stickerImg(key); if(src){ img.src=src; img.style.display='block'; }
+      if(key==='birdie' || key==='eagle' || key==='par') confettiRain(5000);
+      // broadcast event + overlay
+      const playerDoc = await getDoc(doc(db,'games',gameId,'players',uid));
+      const playerName = playerDoc.exists()? (playerDoc.data().name||'Player') : 'Player';
+      await addDoc(collection(db,'games',gameId,'events'), {type:'sticker', hole:currentHole, playerName, sticker:key, at:serverTimestamp()});
+      bigSticker(`${playerName} • H${String(currentHole).padStart(2,'0')}`, key);
+    }
+
+    me = me || {}; me.holes = me.holes || {}; me.holes[String(currentHole)] = s;
+    await persistHole(s);
+    updateScoreUI();
+
+    // doorlopen (wrap)
+    const [sH,eH]=rangeBounds();
+    currentHole = currentHole<eH ? currentHole+1 : sH;
+    updateHeader(); updateScoreUI();
+  };
+
+  // navigatie wrap
+  document.getElementById('prevHole').onclick = ()=>{ const[sH,eH]=rangeBounds(); currentHole = currentHole>sH ? currentHole-1 : eH; updateHeader(); updateScoreUI(); };
+  document.getElementById('nextHole').onclick = ()=>{ const[sH,eH]=rangeBounds(); currentHole = currentHole<eH ? currentHole+1 : sH; updateHeader(); updateScoreUI(); };
+
+  /* ===== WINNAAR VIEREN ===== */
+  function grossForRange(holesObj, start, end){
+    let gross = 0;
+    for(let h=start; h<=end; h++){ gross += holesObj?.[String(h)]?.total || 0; }
+    return gross;
+  }
+
+  async function celebrateWinner(){
+    if(!gameId) return;
+
+    const gSnap = await getDoc(doc(db,'games',gameId));
+    const holeRangeVal = gSnap.exists() ? (gSnap.data().holeRange || '1-18') : '1-18';
+    const [start,end] = holeRangeVal==='10-18' ? [10,18] : holeRangeVal==='1-9' ? [1,9] : [1,18];
+
+    const playersSnap = await getDocs(collection(db,'games',gameId,'players'));
+    const players = {};
+    playersSnap.forEach(d=> players[d.id] = d.data());
+
+    const scoresSnap = await getDocs(collection(db,'games',gameId,'scores'));
+
+    let winnerId = null;
+    let bestNet = Infinity;
+
+    scoresSnap.forEach(sdoc=>{
+      const uid_ = sdoc.id;
+      const sdata = sdoc.data() || {};
+      const gross = grossForRange(sdata.holes||{}, start, end);
+      const hcp = players[uid_]?.handicap || 0;
+      const net = gross - hcp;
+      if(net < bestNet){ bestNet = net; winnerId = uid_; }
+    });
+
+    const winnerName = winnerId ? (players[winnerId]?.name || 'Winnaar') : 'Winnaar';
+
+    royalConfetti(30000);
+    bigWinnerOverlay(winnerName);
+  }
+
+  const endBtn = document.getElementById('endRoundBtn');
+  if(endBtn){ endBtn.onclick = celebrateWinner; }
+
+  /* INIT */
+  holesData = blankHoles();
+  updateHeader(); updateScoreUI();
+
+  // inline naam & hcp edits
+  document.getElementById('playerNameInline').addEventListener('change', async ()=>{
+    if(!gameId||!uid) return;
+    const name = document.getElementById('playerNameInline').value.trim();
+    await setDoc(doc(db,'games',gameId,'players',uid), {name}, {merge:true});
+  });
+  document.getElementById('playerHcpInline').addEventListener('change', async ()=>{
+    if(!gameId||!uid) return;
+    const handicap = Number(document.getElementById('playerHcpInline').value||0);
+    await setDoc(doc(db,'games',gameId,'players',uid), {handicap}, {merge:true});
+  });
   </script>
 </body>
 </html>
