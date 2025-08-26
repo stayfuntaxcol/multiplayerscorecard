@@ -1,605 +1,560 @@
 <!doctype html>
 <html lang="nl">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Multiplayer Golf Scorecard</title>
-<style>
-  :root{
-    --bg:#0e2a35; --panel:#1b4556; --accent:#e9c77f; --light:#cfeef9; --pink:#eecfe9;
-    --ink:#081a20; --muted:#5e7a86; --tab:#113848;
-  }
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:#e7f6ff;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial}
-  .app{max-width:1200px;margin:0 auto;padding:12px}
-  /* Top header */
-  .header{display:flex;gap:8px;align-items:center;margin-bottom:10px}
-  .badge{padding:.55rem .8rem;border-radius:.6rem;background:#efdca9;color:#1b1b1b;font-weight:700}
-  .spacer{flex:1}
-  /* Layout: left score panel and right tabs rail (fixed position feel) */
-  .layout{display:grid;grid-template-columns:1fr 300px;gap:12px}
-  /* Score panel (player) */
-  .card{background:var(--panel);border:2px solid #0b2732;border-radius:10px;padding:10px}
-  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .big{font-size:68px;font-weight:800;text-align:center;padding:18px 6px;background:#215e74;border-radius:8px}
-  .tile{padding:14px 10px;background:#1f5266;border-radius:10px;text-align:center;font-size:38px;font-weight:800}
-  .holebox{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .grid6{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
-  .gridClub{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px}
-  .btn{border:2px solid #0b2732;background:#2a6e86;border-radius:10px;padding:12px;font-size:20px;font-weight:800;cursor:pointer}
-  .btn:active{transform:translateY(1px)}
-  .btn.alt{background:#244d5b}
-  .btn.warn{background:#7f1d1d}
-  .stat{display:flex;gap:6px;align-items:center;justify-content:center;font-size:14px;color:#c9e9f6}
-  .stat small{opacity:.8}
-  .mini{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
-  .pill{background:#0f3341;border:1px solid #06222c;border-radius:6px;padding:6px 8px;text-align:center}
-  .sticker{display:flex;align-items:center;justify-content:center;height:120px;background:#113a49;border-radius:12px;overflow:hidden}
-  .sticker img{max-height:110px;max-width:100%}
-  /* Tabs rail on the right (fixed position per page) */
-  .tabs{display:flex;flex-direction:column;gap:8px}
-  .tabbtn{background:var(--tab);border:2px solid #0b2732;border-radius:12px;padding:14px 10px;text-align:center;
-          font-weight:800;cursor:pointer;position:sticky;top:12px}
-  .tabbtn.active{outline:3px solid #86e0ff}
-  /* Views */
-  .view{display:none}
-  .view.active{display:block}
-  /* Leaderboard table */
-  table{width:100%;border-collapse:collapse}
-  th,td{border:1px solid #0a2732;padding:6px 8px;text-align:center}
-  th{background:#0f3a4a}
-  tr:nth-child(even){background:#0f3140}
-  /* Settings forms */
-  label{display:block;margin:.6rem 0 .2rem;font-weight:600}
-  input,select{width:100%;padding:.6rem;border-radius:8px;border:1px solid #0a2732;background:#0f3a4a;color:#e7f6ff}
-  .row3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-  .holeList{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-  .holeItem{background:#0f3a4a;border:1px solid #0a2732;border-radius:8px;padding:8px}
-  .muted{color:#a5c6d3;font-size:12px}
-  /* Mobile */
-  @media (max-width:900px){
-    .layout{grid-template-columns:1fr}
-    .tabs{flex-direction:row;position:sticky;bottom:0;background:linear-gradient(180deg, transparent, #0d2a36 40%);padding:8px}
-    .tabbtn{flex:1;top:auto}
-  }
-  /* Confetti container */
-  #confetti{position:fixed;inset:0;pointer-events:none}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0e2a35" />
+  <title>Golfcourse Multiplayer Scorecard</title>
+
+  <!-- Mobiel: basis typografie + kleuren met hoog contrast -->
+  <style>
+    :root{
+      --bg:#0e2a35; --ink:#eaf8ff; --muted:#9fc0cf;
+      --panel:#133745; --panel2:#164554; --rail:#0f2f3c;
+      --accent:#f0d28a; --ok:#0ea5e9; --warn:#ef4444;
+      --good:#22c55e; --tab:#114356; --line:#092331;
+      --btn:#1b6177; --btn-alt:#154a5a;
+      --touch:56px; /* minimale aanraakhoogte */
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; background:var(--bg); color:var(--ink);
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial;
+      -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+    }
+    .app{max-width:1200px;margin:0 auto;padding:12px; padding-bottom:calc(12px + env(safe-area-inset-bottom));}
+    h1{margin:0 0 .5rem 0;font-size:1.25rem}
+    h3{margin:.6rem 0}
+    .header{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .badge{background:#e6f5fb;color:#0b2430;border-radius:.8rem;padding:.55rem .7rem;font-weight:800}
+    .badge.dim{background:#cfeef9}
+    .spacer{flex:1}
+
+    /* layout: grote kaart + tabs-rail (rechts), op mobiel enkel kolom + sticky tabs onder */
+    .layout{display:grid;grid-template-columns:1fr 300px;gap:12px;margin-top:10px}
+    .card{background:var(--panel);border:2px solid var(--line);border-radius:12px;padding:10px}
+    .tile{background:var(--panel2);border-radius:10px;padding:12px;text-align:center;font-weight:800}
+    .tile.big{font-size:60px;line-height:1.05}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+    .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+    .grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+    .pill{background:#0c2f3a;border:1px solid var(--line);border-radius:8px;padding:8px;text-align:center}
+    .muted{color:var(--muted);font-size:.85rem}
+
+    /* knoppen - grote touch targets */
+    .btn{display:inline-flex;align-items:center;justify-content:center;
+      background:var(--btn);border:2px solid var(--line);border-radius:12px;
+      min-height:var(--touch);font-size:1.1rem;font-weight:800;color:var(--ink);
+      padding:.6rem .8rem;cursor:pointer;user-select:none;touch-action:manipulation}
+    .btn:active{transform:translateY(1px)}
+    .btn.alt{background:var(--btn-alt)}
+    .btn.warn{background:#7f1d1d}
+    .btn.ghost{background:#103443}
+
+    /* sticker display */
+    .sticker{display:flex;align-items:center;justify-content:center;height:120px;background:#103947;border-radius:12px;overflow:hidden}
+    .sticker img{max-height:110px;max-width:100%}
+
+    /* tabs rail */
+    .tabs{display:flex;flex-direction:column;gap:8px}
+    .tabbtn{position:sticky;top:12px;background:var(--tab);border:2px solid var(--line);
+      border-radius:12px;padding:12px 10px;text-align:center;font-weight:900;cursor:pointer}
+    .tabbtn.active{outline:3px solid #7dd3fc}
+    .view{display:none}
+    .view.active{display:block}
+
+    /* tabel */
+    table{width:100%;border-collapse:collapse}
+    th,td{border:1px solid var(--line);padding:6px 8px;text-align:center}
+    th{background:#0d4152}
+    tr:nth-child(even){background:#0e3442}
+
+    /* sticky tabbar voor mobiel onderin */
+    @media (max-width:900px){
+      .layout{grid-template-columns:1fr}
+      .tabs{position:sticky;bottom:0;z-index:50;flex-direction:row;gap:8px;
+        background:linear-gradient(180deg,transparent,rgba(10,30,38,.85) 40%);padding:8px;
+        margin:12px -12px -12px -12px}
+      .tabbtn{flex:1;top:auto}
+      .tile.big{font-size:48px}
+    }
+
+    /* confetti canvas */
+    #confetti{position:fixed;inset:0;pointer-events:none}
+  </style>
 </head>
 <body>
-<div class="app">
-  <div class="header">
-    <div class="badge" id="gameTitle">Scorecard</div>
-    <div id="holeHeader" class="badge" style="background:#cfeef9">H01 • Par ? • 000m</div>
-    <div class="spacer"></div>
-    <button id="joinBtn" class="btn alt">Deelnemen</button>
-  </div>
-
-  <div class="layout">
-    <!-- LEFT: SCORE VIEW (player entry) -->
-    <div class="card">
-      <!-- SCORE VIEW -->
-      <div id="view-score" class="view active">
-        <div class="row">
-          <div class="tile" id="holeCode">H01</div>
-          <div class="tile" id="holeDist">000</div>
-        </div>
-
-        <div class="big" id="bigScore">0</div>
-
-        <div class="row" style="margin:10px 0">
-          <div class="sticker" id="stickerBox">
-            <!-- Start: toon PAR, daarna bij afvlaggen een badge -->
-            <img id="stickerImg" alt="par" src="assets/par.png" />
-          </div>
-          <div>
-            <div class="gridClub">
-              <button class="btn" data-club="D">D</button>
-              <button class="btn" data-club="3">3</button>
-              <button class="btn" data-club="5">5</button>
-              <button class="btn" data-club="W">W</button>
-              <button class="btn" data-club="7">7</button>
-              <button class="btn" data-club="P">P</button>
-              <button class="btn" data-club="4">4</button>
-              <button class="btn" data-club="6">6</button>
-              <button class="btn" data-club="8">8</button>
-              <button class="btn" data-club="9">9</button>
-            </div>
-            <div class="mini">
-              <button class="btn alt" data-special="ball">⚪</button>
-              <button class="btn alt" data-special="bunker">⛳</button>
-              <button class="btn alt" data-special="water">💧</button>
-              <button class="btn warn" id="flagBtn">🏁</button>
-            </div>
-            <div class="stat">
-              <div class="pill">Puts: <span id="puts">0</span></div>
-              <div class="pill">Ball: <span id="penBall">0</span></div>
-              <div class="pill">Water: <span id="penWater">0</span></div>
-              <div class="pill">Bunker: <span id="penBunker">0</span></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="row">
-          <div>
-            <label>Slaglog</label>
-            <div id="strokeLog" class="pill" style="min-height:44px;text-align:left;overflow:auto;white-space:nowrap"></div>
-          </div>
-          <div>
-            <label>Totaal hole</label>
-            <div class="pill" style="font-size:28px" id="holeTotal">0</div>
-            <div class="muted" id="deltaTxt">t.o.v. Par: 0</div>
-          </div>
-        </div>
-
-      </div>
-
-      <!-- SETTINGS (host create / edit) -->
-      <div id="view-settings" class="view">
-        <h3>Wedstrijd aanmaken / bewerken</h3>
-        <div class="row">
-          <div>
-            <label>Naam baan</label>
-            <input id="fName" placeholder="Baannaam" />
-          </div>
-          <div>
-            <label>TeeTime</label>
-            <input id="fTime" type="datetime-local" />
-          </div>
-        </div>
-        <div class="row">
-          <div>
-            <label>Flight</label>
-            <select id="fFlight">
-              <option>A</option><option>B</option><option>C</option><option>D</option>
-            </select>
-          </div>
-          <div>
-            <label>Holes</label>
-            <select id="fRange">
-              <option value="1-18">1–18</option>
-              <option value="1-9">1–9</option>
-              <option value="10-18">10–18</option>
-            </select>
-          </div>
-        </div>
-
-        <p class="muted">Voer Par en afstand per hole in (kleurcontrast goed zichtbaar):</p>
-        <div class="holeList" id="holeEditor"></div>
-
-        <div style="margin-top:10px;display:flex;gap:8px">
-          <button class="btn" id="createGameBtn">Opslaan / (nieuw) spel</button>
-          <button class="btn alt" id="copyInvite">Kopieer invite-link</button>
-        </div>
-
-        <hr/>
-        <h4>Speler aanmelden</h4>
-        <div class="row">
-          <div><label>Naam</label><input id="pName" placeholder="Jouw naam" /></div>
-          <div><label>Handicap</label><input id="pHcp" type="number" step="1" value="0" /></div>
-        </div>
-        <button class="btn" id="joinGameBtn">Deelnemen</button>
-      </div>
-
-      <!-- LEADERBOARD (compact in left area for mobile, volledige in right tab) -->
-      <div id="view-leader" class="view">
-        <h3>Leaderboard (flight)</h3>
-        <div id="leaderMini"></div>
-      </div>
+  <div class="app">
+    <div class="header" role="banner">
+      <div id="gameTitle" class="badge">Scorecard</div>
+      <div id="holeHeader" class="badge dim">H01 • Par ? • 000m</div>
+      <div class="spacer"></div>
+      <button id="joinBtn" class="btn ghost" aria-label="aanmelden">Deelnemen</button>
     </div>
 
-    <!-- RIGHT: TABS RAIL (blijft op vaste plek) -->
-    <div class="tabs">
-      <button class="tabbtn active" data-tab="score">SCORE</button>
-      <button class="tabbtn" data-tab="leader">LEADERBOARD</button>
-      <button class="tabbtn" data-tab="settings">SCORE CARD</button>
-      <div class="card view active" id="leaderFull" style="margin-top:8px"></div>
+    <div class="layout">
+      <!-- SCORECARD -->
+      <div class="card" aria-live="polite">
+        <div id="view-score" class="view active">
+          <div class="row">
+            <div id="holeCode" class="tile">H01</div>
+            <div id="holeDist" class="tile">000</div>
+          </div>
+
+          <div id="bigScore" class="tile big" aria-label="totaal slagen op deze hole">0</div>
+
+          <div class="row" style="margin-top:10px">
+            <!-- links: sticker/par -->
+            <div class="sticker" id="stickerBox">
+              <img id="stickerImg" src="assets/par.png" alt="Sticker of Par" />
+            </div>
+            <!-- rechts: invoer knoppen -->
+            <div>
+              <div class="grid5" style="margin-bottom:8px">
+                <button class="btn" data-club="D">D</button>
+                <button class="btn" data-club="3">3</button>
+                <button class="btn" data-club="4">4</button>
+                <button class="btn" data-club="5">5</button>
+                <button class="btn" data-club="6">6</button>
+                <button class="btn" data-club="7">7</button>
+                <button class="btn" data-club="8">8</button>
+                <button class="btn" data-club="9">9</button>
+                <button class="btn" data-club="W">W</button>
+                <button class="btn" data-club="P">P</button>
+              </div>
+              <div class="grid4">
+                <button class="btn alt" data-special="ball" aria-label="nieuwe bal">⚪</button>
+                <button class="btn alt" data-special="bunker" aria-label="bunker">⛳</button>
+                <button class="btn alt" data-special="water" aria-label="water">💧</button>
+                <button id="flagBtn" class="btn warn" aria-label="vlag / hole klaar">🏁</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="row" style="margin-top:10px">
+            <div>
+              <div class="muted" style="margin-bottom:6px">Slaglog</div>
+              <div id="strokeLog" class="pill" style="min-height:48px;white-space:nowrap;overflow:auto;text-align:left"></div>
+            </div>
+            <div>
+              <div class="muted" style="margin-bottom:6px">Totaal hole</div>
+              <div id="holeTotal" class="pill" style="font-size:28px">0</div>
+              <div id="deltaTxt" class="muted">t.o.v. Par: 0</div>
+              <div class="grid3" style="margin-top:8px">
+                <div class="pill">Putts: <span id="puts">0</span></div>
+                <div class="pill">Ball: <span id="penBall">0</span></div>
+                <div class="pill">Water: <span id="penWater">0</span></div>
+              </div>
+              <div class="grid3" style="margin-top:6px">
+                <div class="pill">Bunker: <span id="penBunker">0</span></div>
+                <button id="prevHole" class="btn ghost">◀ Vorige</button>
+                <button id="nextHole" class="btn ghost">Volgende ▶</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SETTINGS (Host) -->
+        <div id="view-settings" class="view">
+          <h3>Wedstrijd aanmaken / bewerken</h3>
+          <div class="row">
+            <div>
+              <div class="muted">Naam baan</div>
+              <input id="fName" class="pill" placeholder="Baannaam" />
+            </div>
+            <div>
+              <div class="muted">TeeTime</div>
+              <input id="fTime" type="datetime-local" class="pill" />
+            </div>
+          </div>
+          <div class="row" style="margin-top:6px">
+            <div>
+              <div class="muted">Flight</div>
+              <select id="fFlight" class="pill">
+                <option>A</option><option>B</option><option>C</option><option>D</option>
+              </select>
+            </div>
+            <div>
+              <div class="muted">Holes</div>
+              <select id="fRange" class="pill">
+                <option value="1-18">1–18</option>
+                <option value="1-9">1–9</option>
+                <option value="10-18">10–18</option>
+              </select>
+            </div>
+          </div>
+
+          <p class="muted" style="margin:.8rem 0 .3rem">Par & Afstand per hole (handmatig, duidelijk contrast)</p>
+          <div id="holeEditor" class="card" style="max-height:40vh;overflow:auto"></div>
+
+          <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+            <button id="createGameBtn" class="btn">Opslaan / nieuw spel</button>
+            <button id="copyInvite" class="btn alt">Kopieer invite-link</button>
+          </div>
+
+          <hr style="border:0;border-top:1px solid var(--line);margin:12px 0">
+          <h3>Speler aanmelden</h3>
+          <div class="row">
+            <div>
+              <div class="muted">Naam</div>
+              <input id="pName" class="pill" placeholder="Jouw naam" />
+            </div>
+            <div>
+              <div class="muted">Handicap</div>
+              <input id="pHcp" type="number" step="1" value="0" class="pill" />
+            </div>
+          </div>
+          <button id="joinGameBtn" class="btn" style="margin-top:8px">Deelnemen</button>
+        </div>
+
+        <!-- MINI LEADERBOARD (mobiel) -->
+        <div id="view-leader" class="view">
+          <h3>Leaderboard</h3>
+          <div id="leaderMini"></div>
+        </div>
+      </div>
+
+      <!-- TABS & FULL LEADERBOARD -->
+      <div class="tabs" role="navigation" aria-label="Tabs">
+        <button class="tabbtn active" data-tab="score">SCORE</button>
+        <button class="tabbtn" data-tab="leader">LEADERBOARD</button>
+        <button class="tabbtn" data-tab="settings">SCORE CARD</button>
+        <div id="leaderFull" class="card view active" style="margin-top:8px"></div>
+      </div>
     </div>
   </div>
-</div>
 
-<canvas id="confetti"></canvas>
+  <canvas id="confetti"></canvas>
 
-<script type="module">
-  // Firebase SDK's
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-analytics.js";
-  import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
-  import { getFirestore, doc, setDoc, getDoc, onSnapshot, updateDoc, serverTimestamp, collection, addDoc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+  <!-- Firebase CDN (v12) + app code -->
+  <script type="module">
+    /* ---------------- Firebase setup ---------------- */
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-analytics.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc, onSnapshot, serverTimestamp, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
-  // Jouw projectconfig
-  const firebaseConfig = {
-    apiKey: "AIzaSyBmLsJ5l3_733r3TMSMcQ3XTB7B5-lStTs",
-    authDomain: "golfcourse-mp-scorecard.firebaseapp.com",
-    projectId: "golfcourse-mp-scorecard",
-    storageBucket: "golfcourse-mp-scorecard.appspot.com",   // 👈 let op: moet .appspot.com zijn
-    messagingSenderId: "758687332564",
-    appId: "1:758687332564:web:7db1d2f2f27c3282f2e341",
-    measurementId: "G-VWFL2DN3V9"
-  };
+    // ⬇️ VERVANG dit blok door jouw echte config (of plak je bestaande config hier)
+    const firebaseConfig = FIREBASE_CONFIG_HIER; // { apiKey, authDomain, projectId, storageBucket, appId, ... }
 
-  // Init
-  const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
-  const auth = getAuth(app);
-  const db   = getFirestore(app);
+    const app = initializeApp(firebaseConfig);
+    getAnalytics(app);
+    const auth = getAuth(app);
+    const db   = getFirestore(app);
 
-  // hierna volgt je bestaande code voor signInAnonymously, scorecard etc.
-</script>
+    /* ---------------- App state ---------------- */
+    let uid = null;
+    let gameId = new URLSearchParams(location.search).get('game') || null;
+    let currentHole = 1;
+    let holeRange = "1-18";
+    let holesData = {};      // { "1": {par, distance}, ... }
+    let me = null;           // {name, handicap, holes:{}}
+    let isHost = false;
 
+    const el = id => document.getElementById(id);
+    const views = { score: el('view-score'), leader: el('view-leader'), settings: el('view-settings') };
 
-  // ==== STATE ====
-  let uid = null;
-  let gameId = new URLSearchParams(location.search).get('game') || null;
-  let currentHole = 1;
-  let holeRange = "1-18";
-  let holesData = {};   // { "1": {par, distance}, ...}
-  let me = null;        // {name, handicap}
-  let isHost = false;
-
-  // UI refs
-  const el = (id)=>document.getElementById(id);
-  const views = {
-    score: el('view-score'),
-    leader: el('view-leader'),
-    settings: el('view-settings')
-  };
-
-  // Tabs
-  document.querySelectorAll('.tabbtn').forEach(b=>{
-    b.onclick = ()=>{
-      document.querySelectorAll('.tabbtn').forEach(x=>x.classList.remove('active'));
-      b.classList.add('active');
-      const tab = b.dataset.tab;
-      Object.values(views).forEach(v=>v.classList.remove('active'));
-      views[tab].classList.add('active');
-      if(tab==='leader') renderLeaderboard();
-      if(tab==='score')  renderScoreView();
-      if(tab==='settings') renderHoleEditor();
-    };
-  });
-
-  // Sign-in
-  onAuthStateChanged(auth, async (user)=>{
-    if(!user){ await signInAnonymously(auth); return; }
-    uid = user.uid;
-    if(gameId){ subscribeGame(gameId); }
-  });
-
-  // ===== GAME CREATE / JOIN =====
-  function blankHoles(){
-    const obj={}; for(let i=1;i<=18;i++) obj[String(i)]={par:4,distance:300};
-    return obj;
-  }
-
-  function renderHoleEditor(){
-    const cont = el('holeEditor'); cont.innerHTML='';
-    for(let i=1;i<=18;i++){
-      const d = holesData[String(i)] || {par:4,distance:300};
-      const div = document.createElement('div');
-      div.className='holeItem';
-      div.innerHTML = `
-        <div style="font-weight:700;margin-bottom:4px">H${String(i).padStart(2,'0')}</div>
-        <div class="row3">
-          <div><label>Par</label><input data-i="${i}" data-k="par" type="number" value="${d.par}" /></div>
-          <div><label>Afst (m)</label><input data-i="${i}" data-k="distance" type="number" value="${d.distance}"/></div>
-          <div><label>&nbsp;</label><div class="pill">keep same spot</div></div>
-        </div>
-      `;
-      cont.appendChild(div);
-    }
-    cont.querySelectorAll('input').forEach(inp=>{
-      inp.oninput = ()=>{
-        const i = String(inp.dataset.i);
-        const k = inp.dataset.k;
-        holesData[i] = holesData[i]||{par:4,distance:300};
-        holesData[i][k] = Number(inp.value);
-        updateHoleHeader();
+    // Tabs (sticky / mobiel)
+    document.querySelectorAll('.tabbtn').forEach(b=>{
+      b.onclick=()=>{
+        document.querySelectorAll('.tabbtn').forEach(x=>x.classList.remove('active'));
+        b.classList.add('active');
+        const tab=b.dataset.tab;
+        Object.values(views).forEach(v=>v.classList.remove('active'));
+        views[tab].classList.add('active');
+        if(tab==='leader') renderLeaderboard();
+        if(tab==='settings') renderHoleEditor();
       };
     });
-  }
 
-  async function subscribeGame(id){
-    const gRef = doc(db,'games',id);
-    onSnapshot(gRef,(snap)=>{
-      if(!snap.exists()) return;
-      const g = snap.data();
-      gameId = id;
-      holeRange = g.holeRange||"1-18";
-      holesData = g.holes||blankHoles();
-      isHost = (g.hostUid===uid);
-      el('gameTitle').textContent = `${g.name} • Flight ${g.flight}`;
-      updateHoleHeader();
-      renderHoleEditor();
-      renderLeaderboard();
+    // Auth
+    onAuthStateChanged(auth, async user=>{
+      if(!user){ await signInAnonymously(auth); return; }
+      uid = user.uid;
+      if(gameId) subscribeGame(gameId);
     });
 
-    // my score doc listener
-    const sRef = doc(db,'games',id,'scores',uid);
-    onSnapshot(sRef,(snap)=>{
-      if(!snap.exists()) return;
-      const my = snap.data();
-      me = me || {};
-      me.holes = my.holes||{};
-      renderScoreView();
-    });
+    function blankHoles(){ const o={}; for(let i=1;i<=18;i++) o[String(i)]={par:4,distance:300}; return o; }
 
-    // sticker events (toast-like)
-    onSnapshot(collection(db,'games',id,'events'),(q)=>{
-      q.docChanges().forEach(ch=>{
-        if(ch.type==='added'){
-          const e = ch.doc.data();
-          toastSticker(`${e.playerName} • H${String(e.hole).padStart(2,'0')}`, e.sticker);
-        }
-      });
-    });
-  }
-
-  function updateHoleHeader(){
-    const d = holesData[String(currentHole)]||{par:'?',distance:'000'};
-    el('holeHeader').textContent = `H${String(currentHole).padStart(2,'0')} • Par ${d.par} • ${d.distance}m`;
-    el('holeCode').textContent = `H${String(currentHole).padStart(2,'0')}`;
-    el('holeDist').textContent = d.distance;
-    el('stickerImg').src = 'assets/par.png'; // standaard PAR zichtbaar
-  }
-
-// BOVENIN, voeg helper toe
-async function ensureAuth() {
-  if (uid) return uid;
-  return new Promise(resolve => {
-    const stop = onAuthStateChanged(auth, (user) => {
-      if (user) { uid = user.uid; stop(); resolve(uid); }
-    });
-  });
-}
-
-// ...
-
-el('createGameBtn').onclick = async ()=>{
-  try {
-    await ensureAuth(); // <-- wacht tot uid er is
-    const hostName = el('pName').value.trim() || 'Host';
-    const name = el('fName').value.trim() || 'Golfwedstrijd';
-    const teeTime = el('fTime').value || new Date().toISOString();
-    const flight = el('fFlight').value;
-    const range  = el('fRange').value;
-    const holes  = Object.keys(holesData).length?holesData:blankHoles();
-
-    const g = {
-      name, teeTime, flight, holeRange:range, holes,
-      hostUid: uid, createdAt: serverTimestamp()
-    };
-    const id = gameId || crypto.randomUUID().replace(/-/g,'').slice(0,8);
-    await setDoc(doc(db,'games',id), g, {merge:true});
-    gameId = id;
-    await setDoc(doc(db,'games',id,'players',uid),
-      {name:hostName, handicap: Number(el('pHcp').value||0), joinedAt: serverTimestamp()},
-      {merge:true}
-    );
-    await setDoc(doc(db,'games',id,'scores',uid), {holes:{}, totals:{}},{merge:true});
-    history.replaceState(null,'',`?game=${id}`);
-    alert(`Game opgeslagen: ${id}`);
-  } catch (err) {
-    console.error(err);
-    alert(`Opslaan mislukt: ${err.code || ''} ${err.message || err}`);
-  }
-};
-
-  el('copyInvite').onclick = async ()=>{
-    if(!gameId){ alert('Eerst spel opslaan.'); return; }
-    await navigator.clipboard.writeText(`${location.origin}${location.pathname}?game=${gameId}`);
-    alert('Invite-link gekopieerd!');
-  };
-
-  // Join
-  el('joinGameBtn').onclick = async ()=>{
-    if(!gameId){ alert('Geen game-id. Maak of open een spel.'); return; }
-    const name = el('pName').value.trim();
-    const hcp  = Number(el('pHcp').value||0);
-    if(!name){ alert('Naam is verplicht'); return; }
-    await setDoc(doc(db,'games',gameId,'players',uid), {name, handicap:hcp, joinedAt: serverTimestamp()}, {merge:true});
-    await setDoc(doc(db,'games',gameId,'scores',uid), {holes:{}, totals:{}},{merge:true});
-    me = {name, handicap:hcp};
-    alert('Aangemeld!');
-  };
-
-  // Simple join button top
-  el('joinBtn').onclick = ()=>document.querySelector('[data-tab="settings"]').click();
-
-  // ===== SCORE ENTRY =====
-  const strokeState = ()=> {
-    const meHoles = (me && me.holes) || {};
-    const h = meHoles?.[String(currentHole)] || {strokes:[], putts:0, penalties:{ball:0,water:0,bunker:0}, total:0, sticker:null};
-    return JSON.parse(JSON.stringify(h)); // clone
-  };
-
-  function renderScoreView(){
-    if(!holesData || !Object.keys(holesData).length) return;
-    const h = strokeState();
-    el('puts').textContent = h.putts||0;
-    el('penBall').textContent = h.penalties?.ball||0;
-    el('penWater').textContent = h.penalties?.water||0;
-    el('penBunker').textContent = h.penalties?.bunker||0;
-    el('strokeLog').textContent = (h.strokes||[]).join(' • ');
-    el('bigScore').textContent = h.total||0;
-    const par = holesData[String(currentHole)]?.par ?? 0;
-    el('holeTotal').textContent = h.total||0;
-    el('deltaTxt').textContent = `t.o.v. Par: ${(h.total||0)-par}`;
-  }
-
-  // map: triggers voor stickers
-  function stickerFor(holeTotal, par, extra){
-    // extra: {putts, penalties:{}, strokes:[]}
-    const d = holeTotal - par;
-    if(holeTotal === 8) return 'snowman';
-    if(extra.putts >= 3) return 'three-putt';
-    if(d <= -3) return 'albatross';
-    if(d === -1) return 'birdie';
-    if(d === 0)  return 'par';
-    if(d === 1)  return 'bogey';
-    if(d === 2)  return 'double-bogey';
-    if(d >= 3)   return 'triple-bogey';
-    return null;
-  }
-  const stickerImg = (key)=>({
-    'albatross':'assets/albatross.png',
-    'birdie':'assets/birdie.png',
-    'par':'assets/par.png',
-    'bogey':'assets/bogey.png',
-    'double-bogey':'assets/double-bogey.png',
-    'triple-bogey':'assets/triple-bogey.png',
-    'snowman':'assets/snowman.png',
-    'three-putt':'assets/three-putt.png',
-    'breakfast':'assets/breakfast.png',
-    'mulligan':'assets/mulligan.png'
-  })[key];
-
-  function addStroke(kind){
-    const s = strokeState();
-    if(kind==='P'){ s.putts = (s.putts||0)+1; }
-    if(['D','W','P','3','4','5','6','7','8','9'].includes(kind)) {
-      s.strokes.push(kind); s.total = (s.total||0)+1;
-    }
-    // specials
-    if(kind==='ball'){ s.penalties.ball=(s.penalties.ball||0)+1; s.strokes.push('⚪'); s.total=(s.total||0)+1; }
-    if(kind==='water'){ s.penalties.water=(s.penalties.water||0)+1; s.strokes.push('💧'); s.total=(s.total||0)+1; }
-    if(kind==='bunker'){ s.penalties.bunker=(s.penalties.bunker||0)+1; s.strokes.push('⛳'); /*geen straf*/ }
-
-    // write
-    persistHole(s);
-  }
-
-  async function persistHole(hstate){
-    if(!gameId){ alert('Geen game gekozen'); return; }
-    me = me || {};
-    me.holes = me.holes || {};
-    me.holes[String(currentHole)] = hstate;
-    el('strokeLog').textContent = (hstate.strokes||[]).join(' • ');
-    el('bigScore').textContent = hstate.total||0;
-    el('puts').textContent = hstate.putts||0;
-    el('penBall').textContent = hstate.penalties?.ball||0;
-    el('penWater').textContent = hstate.penalties?.water||0;
-    el('penBunker').textContent = hstate.penalties?.bunker||0;
-    const par = holesData[String(currentHole)]?.par ?? 0;
-    el('holeTotal').textContent = hstate.total||0;
-    el('deltaTxt').textContent = `t.o.v. Par: ${(hstate.total||0)-par}`;
-
-    await setDoc(doc(db,'games',gameId,'scores',uid), {holes: me.holes},{merge:true});
-  }
-
-  document.querySelectorAll('[data-club]').forEach(b=>b.onclick = ()=>addStroke(b.dataset.club));
-  document.querySelectorAll('[data-special]').forEach(b=>b.onclick = ()=>addStroke(b.dataset.special));
-
-  // Flag = hole klaar -> bepaal sticker, event, confetti bij Par/Birdie
-  el('flagBtn').onclick = async ()=>{
-    const s = strokeState();
-    s.strokes.push('🏁');
-    const par = holesData[String(currentHole)]?.par ?? 0;
-    const key = stickerFor(s.total, par, s);
-    if(key){
-      s.sticker = key;
-      el('stickerImg').src = stickerImg(key);
-      if(key==='par' || key==='birdie') confettiRain(5000);
-      // broadcast
-      const playerName = (await getDoc(doc(db,'games',gameId,'players',uid))).data()?.name || 'Player';
-      await addDoc(collection(db,'games',gameId,'events'), {type:'sticker', hole:currentHole, playerName, sticker:key, at:serverTimestamp()});
-    }
-    await persistHole(s);
-    // auto-advance
-    const next = nextHoleIndex();
-    if(next){ currentHole = next; updateHoleHeader(); renderScoreView(); }
-  };
-
-  function nextHoleIndex(){
-    if(holeRange==='1-9'){ if(currentHole<9) return currentHole+1; }
-    if(holeRange==='10-18'){ if(currentHole<18) return currentHole+1; }
-    if(holeRange==='1-18'){ if(currentHole<18) return currentHole+1; }
-    return null;
-  }
-
-  // ===== LEADERBOARD =====
-  async function renderLeaderboard(){
-    if(!gameId) return;
-    // get players live
-    const g = (await getDoc(doc(db,'games',gameId))).data();
-    holeRange = g?.holeRange || holeRange;
-    const [start,end] = holeRange==='10-18'?[10,18]:holeRange==='1-9'?[1,9]:[1,18];
-
-    // build heads
-    const holesHead = Array.from({length:end-start+1}, (_,i)=>start+i).map(h=>`<th>H${String(h).padStart(2,'0')}</th>`).join('');
-    let html = `<table><thead><tr><th>Speler</th>${holesHead}<th>Front</th><th>Back</th><th>Totaal</th><th>Net (hcp)</th></tr></thead><tbody id="lb-body"></tbody></table>`;
-    el('leaderFull').innerHTML = html;
-
-    // live compose rows
-    const body = el('lb-body');
-    // read players list
-    const playersSnap = await (await import("https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js"))
-      .getDocs(collection(db,'games',gameId,'players'));
-    body.innerHTML = '';
-    for (const p of playersSnap.docs){
-      const player = p.data();
-      const scoreDoc = await getDoc(doc(db,'games',gameId,'scores',p.id));
-      const s = scoreDoc.exists()?scoreDoc.data():{holes:{}};
-      let tFront=0,tBack=0,tGross=0;
-      let tds='';
-      for(let h=start;h<=end;h++){
-        const hh = s.holes?.[String(h)]?.total || 0;
-        tds += `<td>${hh||''}</td>`;
-        if(h<=9) tFront += hh; else tBack += hh;
+    function renderHoleEditor(){
+      const cont = el('holeEditor'); cont.innerHTML='';
+      for(let i=1;i<=18;i++){
+        const d = holesData[String(i)] || {par:4,distance:300};
+        const wrap = document.createElement('div');
+        wrap.style.marginBottom='6px';
+        wrap.innerHTML = `
+          <div style="display:grid;grid-template-columns:62px 1fr 1fr;gap:8px;align-items:center">
+            <div class="pill" style="font-weight:800">H${String(i).padStart(2,'0')}</div>
+            <input class="pill" data-i="${i}" data-k="par" type="number" value="${d.par}" aria-label="Par ${i}">
+            <input class="pill" data-i="${i}" data-k="distance" type="number" value="${d.distance}" aria-label="Afstand ${i}">
+          </div>`;
+        cont.appendChild(wrap);
       }
-      tGross = tFront + tBack;
-      const net = tGross - (player.handicap||0);
-      body.insertAdjacentHTML('beforeend',
-        `<tr><td>${player.name||'Player'}</td>${tds}<td>${tFront||''}</td><td>${tBack||''}</td><td>${tGross||''}</td><td>${net||''}</td></tr>`);
-    }
-
-    // compact copy for left view
-    el('leaderMini').innerHTML = el('leaderFull').innerHTML;
-  }
-
-  // ===== UI helpers =====
-  function toastSticker(text, key){
-    const img = stickerImg(key);
-    if(!img) return;
-    const d = document.createElement('div');
-    d.style.position='fixed'; d.style.right='12px'; d.style.bottom='12px';
-    d.style.background='rgba(8,26,32,.9)'; d.style.border='2px solid #0a2732';
-    d.style.borderRadius='12px'; d.style.padding='8px'; d.style.display='flex';
-    d.style.alignItems='center'; d.style.gap='8px'; d.style.zIndex=9999;
-    d.innerHTML = `<img src="${img}" style="height:56px;border-radius:8px" /><div style="max-width:220px"><div style="font-weight:800">${text}</div><div class="muted">${key}</div></div>`;
-    document.body.appendChild(d);
-    setTimeout(()=>d.remove(), 4000);
-  }
-
-  // Minimal confetti (no external libs)
-  function confettiRain(ms=5000){
-    const c = document.getElementById('confetti');
-    const ctx = c.getContext('2d');
-    let W = c.width = innerWidth, H = c.height = innerHeight;
-    let pieces = Array.from({length:150}, ()=>({
-      x: Math.random()*W, y: -20 - Math.random()*H, r: 2+Math.random()*4, vy: 2+Math.random()*3, vx:(Math.random()-0.5)*1.2
-    }));
-    let run=true, tEnd = performance.now()+ms;
-    function step(){
-      ctx.clearRect(0,0,W,H);
-      pieces.forEach(p=>{
-        p.x += p.vx; p.y += p.vy;
-        if(p.y>H+10){ p.y=-10; p.x=Math.random()*W; }
-        ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fillStyle=`hsl(${Math.random()*360},100%,65%)`; ctx.fill();
+      cont.querySelectorAll('input').forEach(inp=>{
+        inp.oninput=()=>{
+          const i = String(inp.dataset.i), k=inp.dataset.k;
+          holesData[i] = holesData[i] || {par:4,distance:300};
+          holesData[i][k] = Number(inp.value);
+          updateHoleHeader();
+        };
       });
-      if(performance.now()<tEnd && run) requestAnimationFrame(step);
-      else ctx.clearRect(0,0,W,H);
     }
-    step();
-    window.addEventListener('resize', ()=>{ W=c.width=innerWidth; H=c.height=innerHeight; }, {once:true});
-  }
 
-  // Init defaults for first open
-  holesData = blankHoles();
-  renderHoleEditor();
-  updateHoleHeader();
-  renderScoreView();
+    async function subscribeGame(id){
+      onSnapshot(doc(db,'games',id), snap=>{
+        if(!snap.exists()) return;
+        const g=snap.data();
+        gameId=id; holeRange=g.holeRange||"1-18"; holesData=g.holes||blankHoles(); isHost=(g.hostUid===uid);
+        el('gameTitle').textContent = `${g.name} • Flight ${g.flight}`;
+        updateHoleHeader(); renderHoleEditor(); renderLeaderboard();
+      });
+      onSnapshot(doc(db,'games',id,'scores',uid), snap=>{
+        if(!snap.exists()) return;
+        me = me || {};
+        me.holes = (snap.data().holes)||{};
+        renderScoreView();
+      });
+      onSnapshot(collection(db,'games',id,'events'), qs=>{
+        qs.docChanges().forEach(ch=>{
+          if(ch.type==='added'){
+            const e = ch.doc.data();
+            toastSticker(`${e.playerName} • H${String(e.hole).padStart(2,'0')}`, e.sticker);
+          }
+        });
+      });
+    }
 
-</script>
+    function updateHoleHeader(){
+      const d = holesData[String(currentHole)]||{par:'?',distance:'000'};
+      el('holeHeader').textContent = `H${String(currentHole).padStart(2,'0')} • Par ${d.par} • ${d.distance}m`;
+      el('holeCode').textContent = `H${String(currentHole).padStart(2,'0')}`;
+      el('holeDist').textContent = d.distance;
+      el('stickerImg').src = 'assets/par.png';
+    }
+
+    async function ensureAuth(){
+      if(uid) return uid;
+      return new Promise(res=>{
+        const stop = onAuthStateChanged(auth,u=>{ if(u){uid=u.uid;stop();res(uid);} });
+      });
+    }
+
+    // Create/Save game (Host)
+    el('createGameBtn').onclick = async ()=>{
+      try{
+        await ensureAuth();
+        const hostName = (el('pName').value.trim() || 'Host');
+        const name = (el('fName').value.trim() || 'Golfwedstrijd');
+        const teeTime = el('fTime').value || new Date().toISOString();
+        const flight = el('fFlight').value;
+        const range  = el('fRange').value;
+        const holes  = Object.keys(holesData).length?holesData:blankHoles();
+        const id = gameId || crypto.randomUUID().replace(/-/g,'').slice(0,8);
+
+        await setDoc(doc(db,'games',id),{
+          name, teeTime, flight, holeRange:range, holes,
+          hostUid: uid, createdAt: serverTimestamp()
+        }, {merge:true});
+
+        await setDoc(doc(db,'games',id,'players',uid),
+          {name:hostName, handicap:Number(el('pHcp').value||0), joinedAt: serverTimestamp()},
+          {merge:true});
+
+        await setDoc(doc(db,'games',id,'scores',uid), {holes:{}, totals:{}}, {merge:true});
+
+        gameId=id; history.replaceState(null,'',`?game=${id}`);
+        alert(`Game opgeslagen: ${id}`);
+      }catch(e){ alert(`Opslaan mislukt: ${e.code||''} ${e.message||e}`); }
+    };
+
+    el('copyInvite').onclick = async ()=>{
+      if(!gameId){ alert('Eerst spel opslaan.'); return; }
+      await navigator.clipboard.writeText(`${location.origin}${location.pathname}?game=${gameId}`);
+      alert('Invite-link gekopieerd!');
+    };
+
+    // Join
+    el('joinGameBtn').onclick = async ()=>{
+      if(!gameId){ alert('Geen game-id. Maak of open een spel.'); return; }
+      const name = el('pName').value.trim();
+      const hcp  = Number(el('pHcp').value||0);
+      if(!name){ alert('Naam is verplicht'); return; }
+      await setDoc(doc(db,'games',gameId,'players',uid), {name, handicap:hcp, joinedAt: serverTimestamp()}, {merge:true});
+      await setDoc(doc(db,'games',gameId,'scores',uid), {holes:{}, totals:{}},{merge:true});
+      me = {name, handicap:hcp};
+      alert('Aangemeld!');
+    };
+
+    el('joinBtn').onclick = ()=>document.querySelector('[data-tab="settings"]').click();
+
+    /* -------- Score invoer -------- */
+    const strokeState = ()=>{
+      const all = (me && me.holes) || {};
+      const h = all[String(currentHole)] || {strokes:[], putts:0, penalties:{ball:0,water:0,bunker:0}, total:0, sticker:null};
+      return JSON.parse(JSON.stringify(h));
+    };
+
+    function renderScoreView(){
+      if(!Object.keys(holesData||{}).length) return;
+      const h = strokeState();
+      el('puts').textContent = h.putts||0;
+      el('penBall').textContent = h.penalties?.ball||0;
+      el('penWater').textContent = h.penalties?.water||0;
+      el('penBunker').textContent = h.penalties?.bunker||0;
+      el('strokeLog').textContent = (h.strokes||[]).join(' • ');
+      el('bigScore').textContent = h.total||0;
+      const par = holesData[String(currentHole)]?.par ?? 0;
+      el('holeTotal').textContent = h.total||0;
+      el('deltaTxt').textContent  = `t.o.v. Par: ${(h.total||0)-par}`;
+    }
+
+    function addStroke(kind){
+      const s = strokeState();
+      if(kind==='P'){ s.putts = (s.putts||0)+1; }
+      if(['D','W','P','3','4','5','6','7','8','9'].includes(kind)){ s.strokes.push(kind); s.total=(s.total||0)+1; }
+      if(kind==='ball'){ s.penalties.ball=(s.penalties.ball||0)+1; s.strokes.push('⚪'); s.total=(s.total||0)+1; }
+      if(kind==='water'){ s.penalties.water=(s.penalties.water||0)+1; s.strokes.push('💧'); s.total=(s.total||0)+1; }
+      if(kind==='bunker'){ s.penalties.bunker=(s.penalties.bunker||0)+1; s.strokes.push('⛳'); }
+      persistHole(s);
+    }
+
+    async function persistHole(hstate){
+      if(!gameId){ alert('Geen game gekozen'); return; }
+      me = me || {}; me.holes = me.holes || {};
+      me.holes[String(currentHole)] = hstate;
+      renderScoreView();
+      await setDoc(doc(db,'games',gameId,'scores',uid), {holes: me.holes},{merge:true});
+    }
+
+    document.querySelectorAll('[data-club]').forEach(b=>b.onclick=()=>addStroke(b.dataset.club));
+    document.querySelectorAll('[data-special]').forEach(b=>b.onclick=()=>addStroke(b.dataset.special));
+
+    // vlag = hole klaar -> sticker + event + confetti
+    el('flagBtn').onclick = async ()=>{
+      const s = strokeState();
+      if(!s.strokes.includes('🏁')) s.strokes.push('🏁');
+      const par = holesData[String(currentHole)]?.par ?? 0;
+      const key = stickerFor(s.total, par, s);
+      if(key){
+        s.sticker=key; el('stickerImg').src = stickerImg(key);
+        if(key==='par' || key==='birdie') confettiRain(5000);
+        const playerName = (await getDoc(doc(db,'games',gameId,'players',uid))).data()?.name || 'Player';
+        await addDoc(collection(db,'games',gameId,'events'), {type:'sticker', hole:currentHole, playerName, sticker:key, at:serverTimestamp()});
+      }
+      await persistHole(s);
+      const next = nextHoleIndex(); if(next){ currentHole=next; updateHoleHeader(); renderScoreView(); }
+    };
+
+    // vorige/volgende hole knoppen (mobiel gemak)
+    el('prevHole').onclick = ()=>{ if(currentHole>1){ currentHole--; updateHoleHeader(); renderScoreView(); } };
+    el('nextHole').onclick = ()=>{ if(currentHole<18){ currentHole++; updateHoleHeader(); renderScoreView(); } };
+
+    function nextHoleIndex(){
+      if(holeRange==='1-9'){ if(currentHole<9) return currentHole+1; }
+      if(holeRange==='10-18'){ if(currentHole<18) return currentHole+1; }
+      if(holeRange==='1-18'){ if(currentHole<18) return currentHole+1; }
+      return null;
+    }
+
+    // sticker logica
+    function stickerFor(total, par, extra){
+      const d = total - par;
+      if(total === 8) return 'snowman';
+      if(extra.putts >= 3) return 'three-putt';
+      if(d <= -3) return 'albatross';
+      if(d === -1) return 'birdie';
+      if(d === 0)  return 'par';
+      if(d === 1)  return 'bogey';
+      if(d === 2)  return 'double-bogey';
+      if(d >= 3)   return 'triple-bogey';
+      return null;
+    }
+    const stickerImg = k=>({
+      'albatross':'assets/albatross.png',
+      'birdie':'assets/birdie.png',
+      'par':'assets/par.png',
+      'bogey':'assets/bogey.png',
+      'double-bogey':'assets/double-bogey.png',
+      'triple-bogey':'assets/triple-bogey.png',
+      'snowman':'assets/snowman.png',
+      'three-putt':'assets/three-putt.png',
+      'breakfast':'assets/breakfast.png',
+      'mulligan':'assets/mulligan.png'
+    })[k];
+
+    /* -------- Leaderboard -------- */
+    async function renderLeaderboard(){
+      if(!gameId) return;
+      const g = (await getDoc(doc(db,'games',gameId))).data();
+      holeRange = g?.holeRange || holeRange;
+      const [start,end] = holeRange==='10-18'?[10,18]:holeRange==='1-9'?[1,9]:[1,18];
+
+      const holesHead = Array.from({length:end-start+1}, (_,i)=>start+i)
+        .map(h=>`<th>H${String(h).padStart(2,'0')}</th>`).join('');
+
+      const wrap = `<table>
+        <thead><tr><th>Speler</th>${holesHead}<th>Front</th><th>Back</th><th>Totaal</th><th>Net (hcp)</th></tr></thead>
+        <tbody id="lb-body"></tbody>
+      </table>`;
+      el('leaderFull').innerHTML = wrap;
+
+      const body = el('lb-body');
+      const playersSnap = await getDocs(collection(db,'games',gameId,'players'));
+      body.innerHTML='';
+
+      for(const p of playersSnap.docs){
+        const player = p.data();
+        const sdoc = await getDoc(doc(db,'games',gameId,'scores',p.id));
+        const s = sdoc.exists()?sdoc.data():{holes:{}};
+        let tFront=0,tBack=0,tds='';
+        for(let h=start;h<=end;h++){
+          const score = s.holes?.[String(h)]?.total || 0;
+          tds += `<td>${score||''}</td>`;
+          if(h<=9) tFront += score; else tBack += score;
+        }
+        const gross=tFront+tBack, net=gross-(player.handicap||0);
+        body.insertAdjacentHTML('beforeend',
+          `<tr><td>${player.name||'Player'}</td>${tds}<td>${tFront||''}</td><td>${tBack||''}</td><td>${gross||''}</td><td>${net||''}</td></tr>`);
+      }
+
+      // kopie voor de compacte leaderboard-weergave links (mobiel)
+      el('leaderMini').innerHTML = el('leaderFull').innerHTML;
+    }
+
+    /* -------- UI helpers -------- */
+    function toastSticker(text, key){
+      const src = stickerImg(key); if(!src) return;
+      const box = document.createElement('div');
+      box.style.position='fixed'; box.style.right='12px'; box.style.bottom='12px';
+      box.style.background='rgba(8,26,32,.92)'; box.style.border='2px solid #0a2732';
+      box.style.borderRadius='12px'; box.style.padding='8px'; box.style.display='flex';
+      box.style.alignItems='center'; box.style.gap='8px'; box.style.zIndex=9999;
+      box.innerHTML = `<img src="${src}" style="height:56px;border-radius:8px"/>
+        <div><div style="font-weight:900">${text}</div><div class="muted">${key}</div></div>`;
+      document.body.appendChild(box); setTimeout(()=>box.remove(), 4000);
+    }
+
+    // simpele confetti, 5s bij Par/Birdie
+    function confettiRain(ms=5000){
+      const c = document.getElementById('confetti'), ctx = c.getContext('2d');
+      let W = c.width = innerWidth, H = c.height = innerHeight;
+      let parts = Array.from({length:180}, ()=>({x:Math.random()*W,y:-20-Math.random()*H,r:2+Math.random()*4,vy:2+Math.random()*3,vx:(Math.random()-.5)*1.2}));
+      const end = performance.now()+ms;
+      (function tick(){
+        ctx.clearRect(0,0,W,H);
+        parts.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; if(p.y>H+10){p.y=-10;p.x=Math.random()*W;}
+          ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fillStyle=`hsl(${Math.random()*360},100%,65%)`; ctx.fill();
+        });
+        if(performance.now()<end) requestAnimationFrame(tick); else ctx.clearRect(0,0,W,H);
+      })();
+      addEventListener('resize', ()=>{ W=c.width=innerWidth; H=c.height=innerHeight; }, {once:true});
+    }
+
+    // init
+    holesData = blankHoles();
+    renderHoleEditor(); updateHoleHeader(); renderScoreView();
+  </script>
 </body>
 </html>
