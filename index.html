@@ -236,13 +236,22 @@
     import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
     import { getFirestore, doc, setDoc, getDoc, onSnapshot, serverTimestamp, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
-    // ⬇️ VERVANG dit blok door jouw echte config (of plak je bestaande config hier)
-    const firebaseConfig = FIREBASE_CONFIG_HIER; // { apiKey, authDomain, projectId, storageBucket, appId, ... }
+// Jouw Firebase config:
+const firebaseConfig = {
+  apiKey: "AIzaSyBmLsJ5l3_733r3TMSMcQ3XTB7B5-lStTs",
+  authDomain: "golfcourse-mp-scorecard.firebaseapp.com",
+  projectId: "golfcourse-mp-scorecard",
+  storageBucket: "golfcourse-mp-scorecard.appspot.com",
+  messagingSenderId: "758687332564",
+  appId: "1:758687332564:web:7db1d2f2f27c3282f2e341",
+  measurementId: "G-VWFL2DN3V9"
+};
 
-    const app = initializeApp(firebaseConfig);
-    getAnalytics(app);
-    const auth = getAuth(app);
-    const db   = getFirestore(app);
+const app = initializeApp(firebaseConfig);
+getAnalytics(app);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
 
     /* ---------------- App state ---------------- */
     let uid = null;
