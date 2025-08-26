@@ -214,292 +214,414 @@
   </div>
 
   <canvas id="confetti"></canvas>
+<script type="module">
+  /* Firebase v12 CDN */
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-analytics.js";
+  import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+  import { getFirestore, doc, setDoc, getDoc, onSnapshot, serverTimestamp, collection, addDoc } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
-  <script type="module">
-    /* Firebase v12 CDN */
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
-    import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-analytics.js";
-    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
-    import { getFirestore, doc, setDoc, getDoc, onSnapshot, serverTimestamp, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+  /* ✅ Jouw Firebase-config (zoals eerder) */
+  const firebaseConfig = {
+    apiKey: "AIzaSyBmLsJ5l3_733r3TMSMcQ3XTB7B5-lStTs",
+    authDomain: "golfcourse-mp-scorecard.firebaseapp.com",
+    projectId: "golfcourse-mp-scorecard",
+    storageBucket: "golfcourse-mp-scorecard.appspot.com",
+    messagingSenderId: "758687332564",
+    appId: "1:758687332564:web:7db1d2f2f27c3282f2e341",
+    measurementId: "G-VWFL2DN3V9"
+  };
 
-    /* VERVANG door jouw echte config-object */
-    const firebaseConfig = FIREBASE_CONFIG_HIER;
+  const app = initializeApp(firebaseConfig);
+  getAnalytics(app);
+  const auth = getAuth(app);
+  const db   = getFirestore(app);
 
-    const app = initializeApp(firebaseConfig);
-    getAnalytics(app);
-    const auth = getAuth(app);
-    const db   = getFirestore(app);
+  /* ===== STATE ===== */
+  let uid = null;
+  let gameId = new URLSearchParams(location.search).get('game') || null;
+  let currentHole = 1;
+  let holeRange = "1-18";
+  let holesData = {};      // { "1": {par, distance}, ... }
+  let me = null;           // {name, handicap, holes:{}}
+  let isHost = false;
 
-    /* ===== STATE ===== */
-    let uid=null, gameId=new URLSearchParams(location.search).get('game')||null;
-    let currentHole=1, holeRange="1-18";
-    let holesData={}, me=null, isHost=false;
+  const el = id => document.getElementById(id);
+  const views = { score: el('view-score'), leader: el('view-leader'), settings: el('view-settings') };
 
-    const el=id=>document.getElementById(id);
-    const views={score:el('view-score'), leader:el('view-leader'), settings:el('view-settings')};
+  /* ===== TABS (boven & onder tegelijk) ===== */
+  document.querySelectorAll('.tabbtn').forEach(b=>{
+    b.onclick = ()=>{
+      document.querySelectorAll('.tabbtn').forEach(x=>x.classList.remove('active'));
+      document.querySelectorAll(`.tabbtn[data-tab="${b.dataset.tab}"]`).forEach(x=>x.classList.add('active'));
+      Object.values(views).forEach(v=>v.classList.remove('active'));
+      views[b.dataset.tab].classList.add('active');
+      if(b.dataset.tab==='leader') renderLeaderboard();
+      if(b.dataset.tab==='settings') renderHoleEditor();
+    };
+  });
 
-    // Tabs (boven & onder synchen)
-    document.querySelectorAll('.tabbtn').forEach(b=>{
-      b.onclick=()=>{
-        document.querySelectorAll('.tabbtn').forEach(x=>x.classList.remove('active'));
-        document.querySelectorAll(`.tabbtn[data-tab="${b.dataset.tab}"]`).forEach(x=>x.classList.add('active'));
-        Object.values(views).forEach(v=>v.classList.remove('active'));
-        views[b.dataset.tab].classList.add('active');
-        if(b.dataset.tab==='leader') renderLeaderboard();
-        if(b.dataset.tab==='settings') renderHoleEditor();
-      };
+  /* ===== AUTH ===== */
+  onAuthStateChanged(auth, async (user)=>{
+    if(!user){ await signInAnonymously(auth); return; }
+    uid = user.uid;
+    if(gameId) subscribeGame(gameId);
+  });
+  async function ensureAuth(){
+    if(uid) return uid;
+    return new Promise(res=>{
+      const stop = onAuthStateChanged(auth, u=>{ if(u){ uid=u.uid; stop(); res(uid); } });
     });
+  }
 
-    // Auth
-    onAuthStateChanged(auth, async (user)=>{
-      if(!user){ await signInAnonymously(auth); return; }
-      uid=user.uid; if(gameId) subscribeGame(gameId);
-    });
+  /* ===== RANGE HELPERS ===== */
+  const rangeBounds = ()=> holeRange==='1-9' ? [1,9] : holeRange==='10-18' ? [10,18] : [1,18];
+  function clampHoleToRange(){
+    const [s,e]=rangeBounds();
+    if(currentHole<s) currentHole=s;
+    if(currentHole>e) currentHole=e;
+  }
 
-    const rangeBounds=()=>holeRange==='1-9'?[1,9]:holeRange==='10-18'?[10,18]:[1,18];
-    function clampHoleToRange(){const[s,e]=rangeBounds(); if(currentHole<s)currentHole=s; if(currentHole>e)currentHole=e;}
-    function blankHoles(){const o={}; for(let i=1;i<=18;i++) o[i]={par:4,distance:300}; return o;}
-
-    function renderHoleEditor(){
-      const cont=el('holeEditor'); cont.innerHTML='';
-      for(let i=1;i<=18;i++){
-        const d=holesData[i]||{par:4,distance:300};
-        const row=document.createElement('div'); row.style.marginBottom='6px';
-        row.innerHTML=`<div style="display:grid;grid-template-columns:62px 1fr 1fr;gap:8px;align-items:center">
+  /* ===== HOLES DATA ===== */
+  function blankHoles(){
+    const o={}; for(let i=1;i<=18;i++) o[i]={par:4,distance:300}; return o;
+  }
+  function renderHoleEditor(){
+    const cont = el('holeEditor'); cont.innerHTML='';
+    for(let i=1;i<=18;i++){
+      const d = holesData[i] || {par:4,distance:300};
+      const row = document.createElement('div'); row.style.marginBottom='6px';
+      row.innerHTML = `
+        <div style="display:grid;grid-template-columns:62px 1fr 1fr;gap:8px;align-items:center">
           <div class="pill" style="font-weight:800">H${String(i).padStart(2,'0')}</div>
           <input class="pill" data-i="${i}" data-k="par" type="number" value="${d.par}">
           <input class="pill" data-i="${i}" data-k="distance" type="number" value="${d.distance}">
         </div>`;
-        cont.appendChild(row);
-      }
-      cont.querySelectorAll('input').forEach(inp=>{
-        inp.oninput=()=>{ const i=inp.dataset.i,k=inp.dataset.k; holesData[i]=holesData[i]||{par:4,distance:300}; holesData[i][k]=Number(inp.value); updateHoleHeader(); };
-      });
+      cont.appendChild(row);
     }
+    cont.querySelectorAll('input').forEach(inp=>{
+      inp.oninput = ()=>{
+        const i=inp.dataset.i, k=inp.dataset.k;
+        holesData[i] = holesData[i] || {par:4,distance:300};
+        holesData[i][k] = Number(inp.value);
+        updateHoleHeader();
+      };
+    });
+  }
 
-    async function subscribeGame(id){
-      onSnapshot(doc(db,'games',id),(snap)=>{
-        if(!snap.exists())return;
-        const g=snap.data(); gameId=id; holeRange=g.holeRange||"1-18"; holesData=g.holes||blankHoles(); isHost=(g.hostUid===uid);
-        el('gameTitle').textContent=`${g.name} • Flight ${g.flight}`; updateHoleHeader(); renderHoleEditor(); renderLeaderboard();
-      });
-      onSnapshot(doc(db,'games',id,'scores',uid),(snap)=>{
-        if(!snap.exists()) return;
-        me = me || {}; me.holes = (snap.data().holes)||{}; renderScoreView();
-      });
-      onSnapshot(doc(db,'games',id,'players',uid),(snap)=>{
-        if(snap.exists()){ const p=snap.data(); el('playerNameInline').value=p.name||''; el('playerHcpInline').value=p.handicap??0; }
-      });
-      onSnapshot(collection(db,'games',id,'events'),(qs)=>{
-        qs.docChanges().forEach(ch=>{
-          if(ch.type==='added'){ const e=ch.doc.data(); toastSticker(`${e.playerName} • H${String(e.hole).padStart(2,'0')}`, e.sticker); }
-        });
-      });
-    }
-
-    function updateHoleHeader(){
-      clampHoleToRange();
-      const d=holesData[currentHole]||{par:'?',distance:'000'};
-      el('holeHeader').textContent=`H${String(currentHole).padStart(2,'0')} • Par ${d.par} • ${d.distance}m`;
-      el('holeCode').textContent=`H${String(currentHole).padStart(2,'0')}`;
-      el('holeDist').textContent=d.distance;
-      el('stickerImg').src='assets/par.png';
-      el('parOverlay').textContent=`Par ${d.par ?? '?'}`;
-    }
-
-    async function ensureAuth(){ if(uid) return uid; return new Promise(res=>{ const stop=onAuthStateChanged(auth,u=>{if(u){uid=u.uid;stop();res(uid);}}); }); }
-
-    // Save game
-    el('createGameBtn').onclick=async()=>{
-      try{
-        await ensureAuth();
-        const hostName=el('pName').value.trim()||'Host';
-        const name=el('fName').value.trim()||'Golfwedstrijd';
-        const teeTime=el('fTime').value||new Date().toISOString();
-        const flight=el('fFlight').value;
-        const range=el('fRange').value;
-        const holes=Object.keys(holesData).length?holesData:blankHoles();
-        const id=gameId||crypto.randomUUID().replace(/-/g,'').slice(0,8);
-        await setDoc(doc(db,'games',id),{name,teeTime,flight,holeRange:range,holes,hostUid:uid,createdAt:serverTimestamp()},{merge:true});
-        await setDoc(doc(db,'games',id,'players',uid),{name:hostName,handicap:Number(el('pHcp').value||0),joinedAt:serverTimestamp()},{merge:true});
-        await setDoc(doc(db,'games',id,'scores',uid),{holes:{},totals:{}},{merge:true});
-        gameId=id; history.replaceState(null,'',`?game=${id}`); alert(`Game opgeslagen: ${id}`);
-      }catch(e){ alert(`Opslaan mislukt: ${e.code||''} ${e.message||e}`); }
-    };
-
-    el('copyInvite').onclick=async()=>{
-      if(!gameId){alert('Eerst spel opslaan.');return;}
-      await navigator.clipboard.writeText(`${location.origin}${location.pathname}?game=${gameId}`);
-      alert('Invite-link gekopieerd!');
-    };
-
-    // Join
-    el('joinGameBtn').onclick=async()=>{
-      if(!gameId){alert('Geen game-id.');return;}
-      const name=el('pName').value.trim(); const hcp=Number(el('pHcp').value||0);
-      if(!name){alert('Naam is verplicht');return;}
-      await setDoc(doc(db,'games',gameId,'players',uid),{name,handicap:hcp,joinedAt:serverTimestamp()},{merge:true});
-      await setDoc(doc(db,'games',gameId,'scores',uid),{holes:{},totals:{}},{merge:true});
-      el('playerNameInline').value=name; el('playerHcpInline').value=hcp; me={name,handicap:hcp};
-      alert('Aangemeld!');
-    };
-
-    // inline edits
-    el('playerNameInline').addEventListener('change',async()=>{ if(!gameId||!uid) return; const name=el('playerNameInline').value.trim(); await setDoc(doc(db,'games',gameId,'players',uid),{name},{merge:true}); });
-    el('playerHcpInline').addEventListener('change',async()=>{ if(!gameId||!uid) return; const handicap=Number(el('playerHcpInline').value||0); await setDoc(doc(db,'games',gameId,'players',uid),{handicap},{merge:true}); });
-
-    // Score state
-    const strokeState=()=>{ const all=(me&&me.holes)||{}; const h=all[String(currentHole)]||{strokes:[],putts:0,penalties:{ball:0,water:0,bunker:0},total:0,sticker:null}; return JSON.parse(JSON.stringify(h)); };
-
-    function renderScoreView(){
-      if(!Object.keys(holesData||{}).length) return;
-      const h=strokeState();
-      el('puts').textContent=h.putts||0;
-      el('penBall').textContent=h.penalties?.ball||0;
-      el('penWater').textContent=h.penalties?.water||0;
-      el('penBunker').textContent=h.penalties?.bunker||0;
-      el('strokeLog').textContent=(h.strokes||[]).join(' • ');
-      el('bigScore').textContent=h.total||0;
-      const par=holesData[currentHole]?.par ?? 0;
-      el('holeTotal').textContent=h.total||0;
-      el('deltaTxt').textContent=`t.o.v. Par: ${(h.total||0)-par}`;
-    }
-
-    function addStroke(kind){
-      const s=strokeState();
-      const countable=['D','W','P','3','4','5','6','7','8','9'];
-
-      if(kind==='P'){ s.putts=(s.putts||0)+1; }
-      if(countable.includes(kind)){ s.strokes.push(kind); s.total=(s.total||0)+1; }
-      if(kind==='ball'){ s.penalties.ball=(s.penalties.ball||0)+1; s.strokes.push('⚪'); s.total=(s.total||0)+1; }
-      if(kind==='water'){ s.penalties.water=(s.penalties.water||0)+1; s.strokes.push('💧'); s.total=(s.total||0)+1; }
-      if(kind==='bunker'){ s.penalties.bunker=(s.penalties.bunker||0)+1; s.strokes.push('⛳'); }
-      if(kind==='mulligan'){
-        for(let i=s.strokes.length-1;i>=0;i--){
-          const sym=s.strokes[i];
-          if(countable.includes(sym)||sym==='⚪'||sym==='💧'){ s.strokes.splice(i,1); s.total=Math.max(0,(s.total||0)-1); break; }
-        }
-        s.strokes.push('🎁');
-      }
-      persistHole(s);
-    }
-
-    async function persistHole(hstate){
-      if(!gameId){alert('Geen game gekozen');return;}
-      me=me||{}; me.holes=me.holes||{}; me.holes[String(currentHole)]=hstate;
+  /* ===== SUBSCRIBE GAME ===== */
+  async function subscribeGame(id){
+    // game meta
+    onSnapshot(doc(db,'games',id),(snap)=>{
+      if(!snap.exists()) return;
+      const g = snap.data();
+      gameId = id;
+      holeRange = g.holeRange || "1-18";
+      holesData = g.holes || blankHoles();
+      isHost = (g.hostUid===uid);
+      el('gameTitle').textContent = `${g.name} • Flight ${g.flight}`;
+      updateHoleHeader(); renderHoleEditor(); renderLeaderboard();
+    });
+    // mijn score
+    onSnapshot(doc(db,'games',id,'scores',uid),(snap)=>{
+      if(!snap.exists()) return;
+      me = me || {};
+      me.holes = (snap.data().holes)||{};
       renderScoreView();
-      await setDoc(doc(db,'games',gameId,'scores',uid),{holes:me.holes},{merge:true});
-    }
-
-    document.querySelectorAll('[data-club]').forEach(b=>b.onclick=()=>addStroke(b.dataset.club));
-    document.querySelectorAll('[data-special]').forEach(b=>b.onclick=()=>addStroke(b.dataset.special));
-
-    // Vlag = hole klaar -> sticker + event + confetti (Birdie/Eagle/Par)
-    el('flagBtn').onclick=async()=>{
-      const s=strokeState();
-      if(!s.strokes.includes('🏁')) s.strokes.push('🏁');
-      const par=holesData[currentHole]?.par ?? 0;
-      const key=stickerFor(s.total,par,s);
-      if(key){
-        s.sticker=key;
-        const img=stickerImg(key); if(img) el('stickerImg').src=img;
-        if(key==='birdie'||key==='eagle'||key==='par') confettiRain(5000);
-        const playerName=(await getDoc(doc(db,'games',gameId,'players',uid))).data()?.name||'Player';
-        await addDoc(collection(db,'games',gameId,'events'),{type:'sticker',hole:currentHole,playerName,sticker:key,at:serverTimestamp()});
+    });
+    // mijn player doc (naam/hcp inline sync)
+    onSnapshot(doc(db,'games',id,'players',uid),(snap)=>{
+      if(snap.exists()){
+        const p=snap.data();
+        el('playerNameInline').value = p.name || '';
+        el('playerHcpInline').value  = p.handicap ?? 0;
       }
-      await persistHole(s);
-      const [sH,eH]=rangeBounds(); if(currentHole<eH){ currentHole++; updateHoleHeader(); renderScoreView(); }
-    };
-
-    // hole navigatie
-    el('prevHole').onclick=()=>{ const[sH,_eH]=rangeBounds(); if(currentHole>sH){ currentHole--; updateHoleHeader(); renderScoreView(); } };
-    el('nextHole').onclick=()=>{ const[_sH,eH]=rangeBounds(); if(currentHole<eH){ currentHole++; updateHoleHeader(); renderScoreView(); } };
-
-    // stickers / mapping
-    function stickerFor(total,par,extra){
-      const d=total-par;
-      if(total===8) return 'snowman';
-      if(extra.putts>=3) return 'three-putt';
-      if(d<=-3) return 'albatross';
-      if(d===-2) return 'eagle';
-      if(d===-1) return 'birdie';
-      if(d===0)  return 'par';
-      if(d===1)  return 'bogey';
-      if(d===2)  return 'double-bogey';
-      if(d>=3)   return 'triple-bogey';
-      return null;
-    }
-    const stickerImg=k=>({
-      'albatross':'assets/albatross.png',
-      'eagle':'assets/eagle.png',
-      'birdie':'assets/birdie.png',
-      'par':'assets/par.png',
-      'bogey':'assets/bogey.png',
-      'double-bogey':'assets/double-bogey.png',
-      'triple-bogey':'assets/triple-bogey.png',
-      'snowman':'assets/snowman.png',
-      'three-putt':'assets/three-putt.png',
-      'breakfast':'assets/breakfast.png',
-      'mulligan':'assets/mulligan.png'
-    })[k];
-
-    // Leaderboard realtime (1x)
-    let unsubLBPlayers=null, unsubLBScores=null;
-    function renderLeaderboard(){
-      if(!gameId) return;
-      getDoc(doc(db,'games',gameId)).then(gSnap=>{
-        const g=gSnap.data()||{}; holeRange=g.holeRange||'1-18';
-        const [start,end]=rangeBounds();
-        const heads=Array.from({length:end-start+1},(_,i)=>start+i).map(h=>`<th>H${String(h).padStart(2,'0')}</th>`).join('');
-        el('leaderFull').innerHTML=`<table>
-          <thead><tr><th>Speler</th>${heads}<th>Front</th><th>Back</th><th>Totaal</th><th>Net (hcp)</th></tr></thead>
-          <tbody id="lb-body"></tbody>
-        </table>`;
-        const body=el('lb-body'); const players=new Map(); const scores=new Map();
-        function draw(){
-          body.innerHTML='';
-          players.forEach((p,id)=>{
-            const s=scores.get(id)||{holes:{}};
-            let tF=0,tB=0,tds='';
-            for(let h=start;h<=end;h++){
-              const sc=s.holes?.[String(h)]?.total||0;
-              tds+=`<td>${sc||''}</td>`;
-              if(h<=9) tF+=sc; else tB+=sc;
-            }
-            const gross=tF+tB, net=gross-(p.handicap||0);
-            body.insertAdjacentHTML('beforeend',`<tr><td>${p.name||'Player'}</td>${tds}<td>${tF||''}</td><td>${tB||''}</td><td>${gross||''}</td><td>${net||''}</td></tr>`);
-          });
+    });
+    // sticker events (toast)
+    onSnapshot(collection(db,'games',id,'events'),(qs)=>{
+      qs.docChanges().forEach(ch=>{
+        if(ch.type==='added'){
+          const e=ch.doc.data();
+          toastSticker(`${e.playerName} • H${String(e.hole).padStart(2,'0')}`, e.sticker);
         }
-        unsubLBPlayers&&unsubLBPlayers(); unsubLBScores&&unsubLBScores();
-        unsubLBPlayers=onSnapshot(collection(db,'games',gameId,'players'),snap=>{snap.docChanges().forEach(ch=>{if(ch.type==='removed')players.delete(ch.doc.id); else players.set(ch.doc.id,ch.doc.data());}); draw();});
-        unsubLBScores=onSnapshot(collection(db,'games',gameId,'scores'),snap=>{snap.docChanges().forEach(ch=>{if(ch.type==='removed')scores.delete(ch.doc.id); else scores.set(ch.doc.id,ch.doc.data());}); draw();});
       });
-    }
+    });
+  }
 
-    // UI helpers
-    function toastSticker(text,key){
-      const src=stickerImg(key); if(!src) return;
-      const d=document.createElement('div');
-      d.style.position='fixed'; d.style.right='12px'; d.style.bottom='12px';
-      d.style.background='rgba(8,26,32,.92)'; d.style.border='2px solid #0a2732';
-      d.style.borderRadius='12px'; d.style.padding='8px'; d.style.display='flex';
-      d.style.alignItems='center'; d.style.gap='8px'; d.style.zIndex=9999;
-      d.innerHTML=`<img src="${src}" style="height:56px;border-radius:8px"/><div><div style="font-weight:900">${text}</div><div class="muted">${key}</div></div>`;
-      document.body.appendChild(d); setTimeout(()=>d.remove(),4000);
-    }
+  /* ===== HEADER / HOLE ===== */
+  function updateHoleHeader(){
+    clampHoleToRange();
+    const d = holesData[currentHole] || {par:'?',distance:'000'};
+    el('holeHeader').textContent = `H${String(currentHole).padStart(2,'0')} • Par ${d.par} • ${d.distance}m`;
+    el('holeCode').textContent   = `H${String(currentHole).padStart(2,'0')}`;
+    el('holeDist').textContent   = d.distance;
+    el('stickerImg').src         = 'assets/par.png';
+    el('parOverlay').textContent = `Par ${d.par ?? '?'}`;
+  }
 
-    function confettiRain(ms=5000){
-      const c=document.getElementById('confetti'),ctx=c.getContext('2d');
-      let W=c.width=innerWidth,H=c.height=innerHeight;
-      let parts=Array.from({length:180},()=>({x:Math.random()*W,y:-20-Math.random()*H,r:2+Math.random()*4,vy:2+Math.random()*3,vx:(Math.random()-.5)*1.2}));
-      const end=performance.now()+ms;
-      (function tick(){ctx.clearRect(0,0,W,H);parts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;if(p.y>H+10){p.y=-10;p.x=Math.random()*W;}ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle=`hsl(${Math.random()*360},100%,65%)`;ctx.fill();}); if(performance.now()<end) requestAnimationFrame(tick); else ctx.clearRect(0,0,W,H);})();
-      addEventListener('resize',()=>{W=c.width=innerWidth;H=c.height=innerHeight;},{once:true});
-    }
+  /* ===== CREATE / JOIN ===== */
+  el('createGameBtn').onclick = async ()=>{
+    try{
+      await ensureAuth();
+      const hostName = el('pName').value.trim() || 'Host';
+      const name     = el('fName').value.trim() || 'Golfwedstrijd';
+      const teeTime  = el('fTime').value || new Date().toISOString();
+      const flight   = el('fFlight').value;
+      const range    = el('fRange').value;
+      const holes    = Object.keys(holesData).length?holesData:blankHoles();
+      const id       = gameId || crypto.randomUUID().replace(/-/g,'').slice(0,8);
 
-    // init
-    holesData=blankHoles(); renderHoleEditor(); updateHoleHeader(); renderScoreView();
-    el('joinBtn').onclick=()=>document.querySelector('.tabbtn[data-tab="settings"]').click();
-  </script>
+      await setDoc(doc(db,'games',id),{
+        name, teeTime, flight, holeRange:range, holes,
+        hostUid: uid, createdAt: serverTimestamp()
+      }, {merge:true});
+
+      await setDoc(doc(db,'games',id,'players',uid),
+        {name:hostName, handicap:Number(el('pHcp').value||0), joinedAt: serverTimestamp()},
+        {merge:true});
+
+      await setDoc(doc(db,'games',id,'scores',uid), {holes:{}, totals:{}}, {merge:true});
+
+      gameId=id; history.replaceState(null,'',`?game=${id}`);
+      alert(`Game opgeslagen: ${id}`);
+    }catch(e){ alert(`Opslaan mislukt: ${e.code||''} ${e.message||e}`); }
+  };
+
+  el('copyInvite').onclick = async ()=>{
+    if(!gameId){ alert('Eerst spel opslaan.'); return; }
+    await navigator.clipboard.writeText(`${location.origin}${location.pathname}?game=${gameId}`);
+    alert('Invite-link gekopieerd!');
+  };
+
+  el('joinGameBtn').onclick = async ()=>{
+    if(!gameId){ alert('Geen game-id.'); return; }
+    const name = el('pName').value.trim();
+    const hcp  = Number(el('pHcp').value||0);
+    if(!name){ alert('Naam is verplicht'); return; }
+    await setDoc(doc(db,'games',gameId,'players',uid), {name, handicap:hcp, joinedAt: serverTimestamp()}, {merge:true});
+    await setDoc(doc(db,'games',gameId,'scores',uid),   {holes:{}, totals:{}}, {merge:true});
+    el('playerNameInline').value = name;
+    el('playerHcpInline').value  = hcp;
+    me = {name, handicap:hcp};
+    alert('Aangemeld!');
+  };
+
+  // inline edits
+  el('playerNameInline').addEventListener('change', async ()=>{
+    if(!gameId||!uid) return;
+    const name = el('playerNameInline').value.trim();
+    await setDoc(doc(db,'games',gameId,'players',uid), {name}, {merge:true});
+  });
+  el('playerHcpInline').addEventListener('change', async ()=>{
+    if(!gameId||!uid) return;
+    const handicap = Number(el('playerHcpInline').value||0);
+    await setDoc(doc(db,'games',gameId,'players',uid), {handicap}, {merge:true});
+  });
+
+  el('joinBtn').onclick = ()=>document.querySelector('.tabbtn[data-tab="settings"]').click();
+
+  /* ===== SCORE ===== */
+  const strokeState = ()=>{
+    const all = (me && me.holes) || {};
+    const h = all[String(currentHole)] || {strokes:[], putts:0, penalties:{ball:0,water:0,bunker:0}, total:0, sticker:null};
+    return JSON.parse(JSON.stringify(h));
+  };
+
+  function renderScoreView(){
+    if(!Object.keys(holesData||{}).length) return;
+    const h = strokeState();
+    el('puts').textContent     = h.putts||0;
+    el('penBall').textContent  = h.penalties?.ball||0;
+    el('penWater').textContent = h.penalties?.water||0;
+    el('penBunker').textContent= h.penalties?.bunker||0;
+    el('strokeLog').textContent= (h.strokes||[]).join(' • ');
+    el('bigScore').textContent = h.total||0;
+    const par = holesData[currentHole]?.par ?? 0;
+    el('holeTotal').textContent= h.total||0;
+    el('deltaTxt').textContent = `t.o.v. Par: ${(h.total||0)-par}`;
+  }
+
+  function addStroke(kind){
+    const s = strokeState();
+    const countable=['D','W','P','3','4','5','6','7','8','9'];
+
+    if(kind==='P'){ s.putts=(s.putts||0)+1; }
+    if(countable.includes(kind)){ s.strokes.push(kind); s.total=(s.total||0)+1; }
+
+    if(kind==='ball'){   s.penalties.ball=(s.penalties.ball||0)+1;   s.strokes.push('⚪'); s.total=(s.total||0)+1; }
+    if(kind==='water'){  s.penalties.water=(s.penalties.water||0)+1; s.strokes.push('💧'); s.total=(s.total||0)+1; }
+    if(kind==='bunker'){ s.penalties.bunker=(s.penalties.bunker||0)+1; s.strokes.push('⛳'); /* geen straf */ }
+
+    if(kind==='mulligan'){
+      for(let i=s.strokes.length-1;i>=0;i--){
+        const sym=s.strokes[i];
+        if(countable.includes(sym) || sym==='⚪' || sym==='💧'){
+          s.strokes.splice(i,1);
+          s.total = Math.max(0,(s.total||0)-1);
+          break;
+        }
+      }
+      s.strokes.push('🎁');
+    }
+    persistHole(s);
+  }
+
+  async function persistHole(hstate){
+    if(!gameId){ alert('Geen game gekozen'); return; }
+    me = me || {}; me.holes = me.holes || {};
+    me.holes[String(currentHole)] = hstate;
+    renderScoreView();
+    await setDoc(doc(db,'games',gameId,'scores',uid), {holes: me.holes},{merge:true});
+  }
+
+  document.querySelectorAll('[data-club]').forEach(b=>b.onclick=()=>addStroke(b.dataset.club));
+  document.querySelectorAll('[data-special]').forEach(b=>b.onclick=()=>addStroke(b.dataset.special));
+
+  // vlag = hole klaar -> sticker + event + confetti (Birdie/Eagle/Par)
+  el('flagBtn').onclick = async ()=>{
+    const s = strokeState();
+    if(!s.strokes.includes('🏁')) s.strokes.push('🏁');
+    const par = holesData[currentHole]?.par ?? 0;
+    const key = stickerFor(s.total, par, s);
+    if(key){
+      s.sticker = key;
+      const img = stickerImg(key); if(img) el('stickerImg').src = img;
+      if(key==='birdie' || key==='eagle' || key==='par') confettiRain(5000);
+      const playerName = (await getDoc(doc(db,'games',gameId,'players',uid))).data()?.name || 'Player';
+      await addDoc(collection(db,'games',gameId,'events'), {type:'sticker', hole:currentHole, playerName, sticker:key, at:serverTimestamp()});
+    }
+    await persistHole(s);
+    const [sH,eH]=rangeBounds();
+    if(currentHole<eH){ currentHole++; updateHoleHeader(); renderScoreView(); }
+  };
+
+  // hole navigatie knoppen
+  el('prevHole').onclick = ()=>{ const[sH,_eH]=rangeBounds(); if(currentHole>sH){ currentHole--; updateHoleHeader(); renderScoreView(); } };
+  el('nextHole').onclick = ()=>{ const[_sH,eH]=rangeBounds(); if(currentHole<eH){ currentHole++; updateHoleHeader(); renderScoreView(); } };
+
+  /* ===== STICKERS ===== */
+  function stickerFor(total, par, extra){
+    const d = total - par;
+    if(total === 8) return 'snowman';
+    if(extra.putts >= 3) return 'three-putt';
+    if(d <= -3) return 'albatross';
+    if(d === -2) return 'eagle';
+    if(d === -1) return 'birdie';
+    if(d === 0)  return 'par';
+    if(d === 1)  return 'bogey';
+    if(d === 2)  return 'double-bogey';
+    if(d >= 3)   return 'triple-bogey';
+    return null;
+  }
+  const stickerImg = k=>({
+    'albatross':'assets/albatross.png',
+    'eagle':'assets/eagle.png',            // voeg assets/eagle.png toe
+    'birdie':'assets/birdie.png',
+    'par':'assets/par.png',
+    'bogey':'assets/bogey.png',
+    'double-bogey':'assets/double-bogey.png',
+    'triple-bogey':'assets/triple-bogey.png',
+    'snowman':'assets/snowman.png',
+    'three-putt':'assets/three-putt.png',
+    'breakfast':'assets/breakfast.png',
+    'mulligan':'assets/mulligan.png'
+  })[k];
+
+  /* ===== LEADERBOARD realtime (1x) ===== */
+  let unsubLBPlayers=null, unsubLBScores=null;
+  function renderLeaderboard(){
+    if(!gameId) return;
+    getDoc(doc(db,'games',gameId)).then(gSnap=>{
+      const g=gSnap.data()||{}; holeRange=g.holeRange||'1-18';
+      const [start,end]=rangeBounds();
+
+      const heads=Array.from({length:end-start+1},(_,i)=>start+i).map(h=>`<th>H${String(h).padStart(2,'0')}</th>`).join('');
+      el('leaderFull').innerHTML = `
+        <table>
+          <thead>
+            <tr><th>Speler</th>${heads}<th>Front</th><th>Back</th><th>Totaal</th><th>Net (hcp)</th></tr>
+          </thead>
+          <tbody id="lb-body"></tbody>
+        </table>
+      `;
+      const body = el('lb-body');
+      const players = new Map(); // uid -> {name, handicap}
+      const scores  = new Map(); // uid -> {holes:{}}
+
+      function draw(){
+        body.innerHTML='';
+        players.forEach((p,id)=>{
+          const s = scores.get(id)||{holes:{}};
+          let tF=0,tB=0, tds='';
+          for(let h=start;h<=end;h++){
+            const sc = s.holes?.[String(h)]?.total || 0;
+            tds += `<td>${sc||''}</td>`;
+            if(h<=9) tF+=sc; else tB+=sc;
+          }
+          const gross=tF+tB, net=gross-(p.handicap||0);
+          body.insertAdjacentHTML('beforeend', `<tr><td>${p.name||'Player'}</td>${tds}<td>${tF||''}</td><td>${tB||''}</td><td>${gross||''}</td><td>${net||''}</td></tr>`);
+        });
+      }
+
+      // Unsubs
+      unsubLBPlayers && unsubLBPlayers();
+      unsubLBScores  && unsubLBScores();
+
+      unsubLBPlayers = onSnapshot(collection(db,'games',gameId,'players'), snap=>{
+        snap.docChanges().forEach(ch=>{
+          if(ch.type==='removed') players.delete(ch.doc.id);
+          else players.set(ch.doc.id, ch.doc.data());
+        });
+        draw();
+      });
+
+      unsubLBScores = onSnapshot(collection(db,'games',gameId,'scores'), snap=>{
+        snap.docChanges().forEach(ch=>{
+          if(ch.type==='removed') scores.delete(ch.doc.id);
+          else scores.set(ch.doc.id, ch.doc.data());
+        });
+        draw();
+      });
+    });
+  }
+
+  /* ===== UI helpers ===== */
+  function toastSticker(text, key){
+    const src = stickerImg(key); if(!src) return;
+    const d = document.createElement('div');
+    d.style.position='fixed'; d.style.right='12px'; d.style.bottom='12px';
+    d.style.background='rgba(8,26,32,.92)'; d.style.border='2px solid #0a2732';
+    d.style.borderRadius='12px'; d.style.padding='8px'; d.style.display='flex';
+    d.style.alignItems='center'; d.style.gap='8px'; d.style.zIndex=9999;
+    d.innerHTML = `<img src="${src}" style="height:56px;border-radius:8px"/>
+      <div><div style="font-weight:900">${text}</div><div class="muted">${key}</div></div>`;
+    document.body.appendChild(d);
+    setTimeout(()=>d.remove(), 4000);
+  }
+
+  function confettiRain(ms=5000){
+    const c=document.getElementById('confetti'), ctx=c.getContext('2d');
+    let W=c.width=innerWidth, H=c.height=innerHeight;
+    let parts = Array.from({length:180}, ()=>({x:Math.random()*W,y:-20-Math.random()*H,r:2+Math.random()*4,vy:2+Math.random()*3,vx:(Math.random()-.5)*1.2}));
+    const end=performance.now()+ms;
+    (function tick(){
+      ctx.clearRect(0,0,W,H);
+      parts.forEach(p=>{
+        p.x+=p.vx; p.y+=p.vy;
+        if(p.y>H+10){ p.y=-10; p.x=Math.random()*W; }
+        ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+        ctx.fillStyle=`hsl(${Math.random()*360},100%,65%)`; ctx.fill();
+      });
+      if(performance.now()<end) requestAnimationFrame(tick); else ctx.clearRect(0,0,W,H);
+    })();
+    addEventListener('resize',()=>{ W=c.width=innerWidth; H=c.height=innerHeight; },{once:true});
+  }
+
+  /* ===== INIT ===== */
+  holesData = blankHoles();
+  renderHoleEditor(); updateHoleHeader(); renderScoreView();
+</script>
+
+
 </body>
 </html>
