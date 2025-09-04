@@ -611,6 +611,7 @@
     box.style.textAlign='center';
     box.style.maxWidth='90vw';
 
+
     box.innerHTML = `
       <div style="font-size:54px;line-height:1.1">👑⭐🎉🎊</div>
       <div style="font-size:26px;font-weight:900;margin-top:6px">Gefeliciteerd ${name}!</div>
@@ -739,6 +740,123 @@
   const endBtn = document.getElementById('endRoundBtn');
   if(endBtn){ endBtn.onclick = celebrateWinner; }
 
+/* ===== LEADERBOARD (realtime) ===== */
+const LB = { players:{}, scores:{}, holesMeta:()=>holesData, range:()=>holeRange };
+
+const medal = i => (i===0?'🥇':i===1?'🥈':i===2?'🥉':'');
+const fmtTime = sec => {
+  if(!sec || sec<=0) return '—';
+  const h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60), s=sec%60;
+  return h?`${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`:`${m}:${String(s).padStart(2,'0')}`;
+};
+const rangeBoundsFrom = rg => rg==='10-18'?[10,18]:rg==='1-9'?[1,9]:[1,18];
+
+function parSumForRange(holes,start,end){
+  let sum=0; for(let h=start; h<=end; h++){ sum += Number(holes?.[h]?.par||4); } return sum;
+}
+function grossForRange(holesObj,start,end){
+  let gross=0; for(let h=start; h<=end; h++){ gross += Number(holesObj?.[String(h)]?.total||0); } return gross;
+}
+function durationForRange(holesObj,start,end){
+  let sum=0; for(let h=start; h<=end; h++){ sum += Number(holesObj?.[String(h)]?.duration||0); } return sum;
+}
+function finishedCount(holesObj,start,end){
+  let n=0; for(let h=start; h<=end; h++){ if(holesObj?.[String(h)]?.endTs) n++; } return n;
+}
+function countSticker(holesObj,start,end,key){
+  let n=0; for(let h=start; h<=end; h++){ if(holesObj?.[String(h)]?.sticker===key) n++; } return n;
+}
+
+function recomputeLeaderboard(){
+  const cont = document.getElementById('leaderFull');
+  if(!cont) return;
+  const [start,end] = rangeBoundsFrom(LB.range());
+  const parSum = parSumForRange(LB.holesMeta(), start, end);
+
+  // bouw rows
+  const rows = Object.entries(LB.scores).map(([uid_, sdoc])=>{
+    const holes = sdoc?.holes||{};
+    const p = LB.players[uid_] || {};
+    const gross = grossForRange(holes,start,end);
+    const hcp = Number(p.handicap||0);
+    const net = gross - hcp;
+    const toPar = gross - parSum;
+    const dur = durationForRange(holes,start,end);
+    const done = finishedCount(holes,start,end);
+    const birds = countSticker(holes,start,end,'birdie');
+    const eagles = countSticker(holes,start,end,'eagle');
+    return {
+      uid: uid_, name: p.name||'—', flight: p.flight||'-', tee: p.teeTime||'-',
+      hcp, gross, net, toPar, done, total: (end-start+1), dur, birds, eagles
+    };
+  });
+
+  // sortering: Net ↑, Gross ↑, Tijd ↑, Naam ↑
+  rows.sort((a,b)=> a.net-b.net || a.gross-b.gross || a.dur-b.dur || a.name.localeCompare(b.name));
+
+  // render
+  cont.innerHTML = `
+    <table class="table" style="width:100%">
+      <thead>
+        <tr>
+          <th>#</th><th>Speler</th><th>Flight</th><th>Tee</th>
+          <th>Gross</th><th>HCP</th><th>Net</th><th>±Par</th>
+          <th>Holes</th><th>Tijd</th><th>🐦</th><th>🦅</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows.map((r,i)=>`
+          <tr>
+            <td>${medal(i) || (i+1)}</td>
+            <td style="text-align:left;font-weight:800">${r.name}</td>
+            <td>${r.flight}</td>
+            <td>${r.tee}</td>
+            <td>${r.gross||0}</td>
+            <td>${r.hcp||0}</td>
+            <td style="font-weight:900">${r.net||0}</td>
+            <td>${r.toPar>0?`+${r.toPar}`:r.toPar}</td>
+            <td>${r.done}/${r.total}</td>
+            <td>${fmtTime(r.dur)}</td>
+            <td>${r.birds||0}</td>
+            <td>${r.eagles||0}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+    <div class="muted sm" style="margin-top:6px">
+      Range: H${String(start).padStart(2,'0')}–H${String(end).padStart(2,'0')} • Par som: ${parSum}
+    </div>
+  `;
+}
+
+function startLeaderboardListeners(id){
+  // spelers
+  onSnapshot(collection(db,'games',id,'players'), snap=>{
+    LB.players = {};
+    snap.forEach(d=> LB.players[d.id]=d.data());
+    recomputeLeaderboard();
+  });
+  // scores
+  onSnapshot(collection(db,'games',id,'scores'), snap=>{
+    LB.scores = {};
+    snap.forEach(d=> LB.scores[d.id]=d.data());
+    recomputeLeaderboard();
+  });
+}
+
+// Recompute bij wijzigingen in game meta (holeRange/holes) – voeg dit toe in jouw onSnapshot(doc(db,'games',id)) NA het updaten van holesData/holeRange:
+///  ... bestaande code ...
+///  holesData = g.holes || blankHoles();
+///  holeRange = g.holeRange || '1-18';
+///  updateHeader(); updateScoreUI();
+recomputeLeaderboard();
+
+// start listeners vanuit subscribeGame:
+/// voeg aan het einde van subscribeGame(id) toe:
+startLeaderboardListeners(id);
+
+
+    
   /* ===== GOLF COURSE: UI LOGICA ===== */
 
   // Build holes table rows 1..18
