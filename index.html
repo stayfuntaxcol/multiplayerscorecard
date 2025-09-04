@@ -40,12 +40,23 @@
   .scoreGrid{display:grid;grid-template-columns:1fr 1.2fr;gap:10px}
   .view{display:none}.view.active{display:block}
   @media (max-width:900px){ .scoreGrid{grid-template-columns:1fr} }
+
+  /* --- GOLF COURSE view helpers --- */
+  .table{width:100%;border-collapse:collapse}
+  .table th,.table td{border:1px solid var(--line);padding:6px;text-align:center}
+  .table th{background:#0c2f3a}
+  .table input{width:100%;background:#0b2f3a;border:1px solid #0a2732;color:var(--ink);border-radius:6px;padding:6px}
+  .inline{display:flex;gap:8px;flex-wrap:wrap}
+  .tag{background:#0c2f3a;border:1px solid var(--line);padding:.35rem .55rem;border-radius:.7rem;font-weight:800}
+  .list{display:grid;grid-template-columns:1fr;gap:8px}
+  .item{display:flex;align-items:center;justify-content:space-between;background:#0c2f3a;border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+  .sm{font-size:.9rem}
   </style>
 </head>
 <body>
   <div class="app">
     <div class="header">
-      <div id="gameTitle" class="badge">Scorecard</div>
+      <div id="gameTitle" class="badge">Golf Course</div>
       <div id="holeHeader" class="badge dim">H01 • Par ? • 000m</div>
       <div class="spacer"></div>
     </div>
@@ -109,7 +120,6 @@
                 <button class="btn alt" data-special="star" aria-label="highlight shot">⭐</button>
                 <button class="btn alt" data-special="resign" aria-label="opgegeven">🔴</button>
                 <button id="flagBtn" class="btn alt" aria-label="hole klaar" title="Hole klaar">
-                  <!-- Blauwe vlag -->
                   <svg width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                     <path d="M5 3v18" stroke="#8fb3ff" stroke-width="2"/>
                     <path d="M6 4h11l-3 3 3 3H6z" fill="#3b82f6"/>
@@ -148,10 +158,78 @@
           </div>
         </div>
 
-        <!-- ===== SETTINGS (placeholder, later uitwerken) ===== -->
+        <!-- ===== GOLF COURSE (beheer) ===== -->
         <div id="view-settings" class="view">
-          <h3>Score Card instellingen</h3>
-          <p class="muted">(Deze pagina werken we later verder uit.)</p>
+          <h3 style="margin:6px 0 10px">Golf Course • Wedstrijd & Baan</h3>
+
+          <!-- Wedstrijd meta -->
+          <div class="tile" style="text-align:left;margin-bottom:10px">
+            <div class="inline">
+              <div style="flex:1;min-width:220px">
+                <div class="muted">Wedstrijdnaam</div>
+                <input id="gcGameName" class="pill" placeholder="Bijv. Zomerbokaal">
+              </div>
+              <div style="width:150px">
+                <div class="muted">Hole-range</div>
+                <select id="gcHoleRange" class="pill">
+                  <option value="1-18">1–18</option>
+                  <option value="1-9">1–9</option>
+                  <option value="10-18">10–18</option>
+                </select>
+              </div>
+              <div style="width:160px">
+                <div class="muted">TeeTime (default)</div>
+                <input id="gcTeeTime" class="pill" type="time">
+              </div>
+              <div style="width:140px">
+                <div class="muted">Flight (default)</div>
+                <input id="gcFlight" class="pill" placeholder="A / 1 / …">
+              </div>
+            </div>
+            <div class="inline" style="margin-top:8px">
+              <div style="flex:1;min-width:220px">
+                <div class="muted">Golfbaan</div>
+                <input id="gcCourseName" class="pill" placeholder="Course naam">
+              </div>
+              <div style="flex:1;min-width:180px">
+                <div class="muted">Plaats</div>
+                <input id="gcCourseCity" class="pill" placeholder="Plaats">
+              </div>
+              <button id="gcSaveMeta" class="btn">Opslaan wedstrijd + baan</button>
+            </div>
+            <div class="muted sm" style="margin-top:6px">Wordt opgeslagen in <span class="tag">games/{gameId}</span>.</div>
+          </div>
+
+          <!-- Holes editor -->
+          <div class="card" style="border-color:#0a2b39">
+            <div class="inline" style="align-items:center;justify-content:space-between;margin-bottom:6px">
+              <div style="font-weight:800">Holes (Par • Afstand • Naam)</div>
+              <div class="inline">
+                <button id="gcFillPar4" class="btn alt sm" style="min-height:auto">Par4 • 300m</button>
+                <button id="gcSaveHoles" class="btn sm" style="min-height:auto">Holes opslaan</button>
+              </div>
+            </div>
+            <table class="table" id="holesTable">
+              <thead><tr><th>#</th><th>Par</th><th>m</th><th>Naam (optioneel)</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+
+          <!-- Players / Flights -->
+          <div class="card" style="border-color:#0a2b39;margin-top:10px">
+            <div style="font-weight:800;margin-bottom:8px">Spelers & Flights</div>
+
+            <div class="inline">
+              <input id="plName" class="pill" placeholder="Naam speler" style="flex:2;min-width:180px">
+              <input id="plHcp" class="pill" type="number" step="1" value="0" style="width:110px" placeholder="HCP">
+              <input id="plFlight" class="pill" placeholder="Flight" style="width:120px">
+              <input id="plTee" class="pill" type="time" style="width:150px" placeholder="TeeTime">
+              <button id="addPlayerBtn" class="btn">Speler toevoegen</button>
+            </div>
+            <div class="muted sm" style="margin-top:6px">Toegevoegd aan <span class="tag">games/{gameId}/players</span>. Je eigen inline naam/hcp wordt gesynct met je eigen spelerskaart.</div>
+
+            <div id="playersList" class="list" style="margin-top:10px"></div>
+          </div>
         </div>
 
         <!-- ===== LEADERBOARD ===== -->
@@ -168,7 +246,7 @@
       <div class="tabs bottom" role="navigation" aria-label="Tabs">
         <button class="tabbtn active" data-tab="score">SCORE</button>
         <button class="tabbtn" data-tab="leader">LEADERBOARD</button>
-        <button class="tabbtn" data-tab="settings">SCORE CARD</button>
+        <button class="tabbtn" data-tab="settings">GOLF COURSE</button>
       </div>
     </div>
   </div>
@@ -178,7 +256,7 @@
   <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
   import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
-  import { getFirestore, doc, setDoc, getDoc, onSnapshot, serverTimestamp, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+  import { getFirestore, doc, setDoc, getDoc, onSnapshot, serverTimestamp, collection, addDoc, getDocs, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
   /* Firebase config (jouw project) */
   const firebaseConfig = {
@@ -214,8 +292,9 @@
   let gameId = new URLSearchParams(location.search).get('game') || null;
   let currentHole = 1;
   let holeRange = '1-18';
-  let holesData = {}; // {1:{par,distance},...}
+  let holesData = {}; // {1:{par,distance,name},...}
   let me = null;      // {name,handicap,holes:{}}
+  let unsubPlayers = null;
 
   const el = id => document.getElementById(id);
   const rangeBounds = ()=> holeRange==='1-9' ? [1,9] : holeRange==='10-18' ? [10,18] : [1,18];
@@ -228,7 +307,7 @@
   });
 
   /* ===== HELPERS ===== */
-  function blankHoles(){ const o={}; for(let i=1;i<=18;i++) o[i]={par:4,distance:300}; return o; }
+  function blankHoles(){ const o={}; for(let i=1;i<=18;i++) o[i]={par:4,distance:300,name:''}; return o; }
   function mmss(sec){ const m=Math.floor(sec/60); const s=String(sec%60).padStart(2,'0'); return `${m}:${s}`; }
 
   function defaultHole(){
@@ -300,18 +379,35 @@
     onSnapshot(doc(db,'games',id),(snap)=>{
       if(!snap.exists()) return;
       const g=snap.data();
-      holeRange=g.holeRange||'1-18';
-      holesData=g.holes||blankHoles();
-      el('gameTitle').textContent = `${g.name||'Scorecard'}${g.flight?` • Flight ${g.flight}`:''}`;
+      holeRange = g.holeRange || '1-18';
+      holesData = g.holes || blankHoles();
+
+      // header badge
+      const nameBadge = g.name || 'Golf Course';
+      const flightBadge = g.defaultFlight ? ` • Flight ${g.defaultFlight}` : (g.flight ? ` • Flight ${g.flight}` : '');
+      el('gameTitle').textContent = `${nameBadge}${flightBadge}`;
+
       updateHeader();
       updateScoreUI();
+
+      // sync GC form
+      el('gcGameName').value = g.name || '';
+      el('gcHoleRange').value = g.holeRange || '1-18';
+      el('gcTeeTime').value = g.defaultTeeTime || g.teeTime || '';
+      el('gcFlight').value = g.defaultFlight || g.flight || '';
+      el('gcCourseName').value = g.course?.name || '';
+      el('gcCourseCity').value = g.course?.city || '';
+
+      buildHolesTable(holesData);
     });
+
     // scores (mijn doc)
     onSnapshot(doc(db,'games',id,'scores',uid),(snap)=>{
       if(!snap.exists()) return;
       me = me || {}; me.holes = snap.data().holes||{};
       updateScoreUI();
     });
+
     // spelersnaam/hcp inline sync
     onSnapshot(doc(db,'games',id,'players',uid),(snap)=>{
       if(snap.exists()){
@@ -320,7 +416,55 @@
         document.getElementById('playerHcpInline').value  = p.handicap ?? 0;
       }
     });
-    // event meldingen (stickers) kunnen hier ook geluisterd worden indien gewenst
+
+    // spelerslijst
+    listenPlayers();
+  }
+
+  function listenPlayers(){
+    if(!gameId) return;
+    if(unsubPlayers) unsubPlayers(); // cleanup
+    const qPlayers = query(collection(db,'games',gameId,'players'));
+    unsubPlayers = onSnapshot(qPlayers, (snap)=>{
+      const wrap = el('playersList');
+      wrap.innerHTML = '';
+      snap.forEach(d=>{
+        const p=d.data();
+        const line = document.createElement('div');
+        line.className='item';
+        line.innerHTML = `
+          <div>
+            <div style="font-weight:800">${p.name || '—'} <span class="tag sm">HCP ${p.handicap ?? 0}</span></div>
+            <div class="muted sm">Flight: ${p.flight || '-'} • Tee: ${p.teeTime || '-'}</div>
+          </div>
+          <div class="inline">
+            <button class="btn alt sm" style="min-height:auto" data-edit="${d.id}">Edit</button>
+            <button class="btn sm" style="min-height:auto;background:#7a2030" data-del="${d.id}">Verwijder</button>
+          </div>
+        `;
+        wrap.appendChild(line);
+      });
+
+      // bind delete/edit
+      wrap.querySelectorAll('[data-del]').forEach(b=>{
+        b.onclick = async ()=>{
+          await deleteDoc(doc(db,'games',gameId,'players', b.dataset.del));
+        };
+      });
+      wrap.querySelectorAll('[data-edit]').forEach(b=>{
+        b.onclick = async ()=>{
+          const ref = doc(db,'games',gameId,'players', b.dataset.edit);
+          const snap = await getDoc(ref); if(!snap.exists()) return;
+          const p=snap.data();
+          el('plName').value = p.name || '';
+          el('plHcp').value = p.handicap ?? 0;
+          el('plFlight').value = p.flight || '';
+          el('plTee').value = p.teeTime || '';
+          el('addPlayerBtn').textContent = 'Opslaan wijzigingen';
+          el('addPlayerBtn').dataset.editing = b.dataset.edit;
+        };
+      });
+    });
   }
 
   /* ===== STICKERS ===== */
@@ -386,7 +530,6 @@
     const EMOJI = ['👑','⭐','🎉','🎊'];
     const pieces = [];
 
-    // Emoji “confetti”
     for(let i=0;i<220;i++){
       pieces.push({
         type:'emoji',
@@ -400,7 +543,6 @@
         size: 18 + Math.random()*16
       });
     }
-    // Slingers (stroken)
     for(let i=0;i<60;i++){
       pieces.push({
         type:'streamer',
@@ -431,7 +573,6 @@
           ctx.fillText(p.char, 0, 0);
           ctx.restore();
         }else{
-          // streamer
           ctx.save();
           ctx.globalAlpha = p.alpha;
           ctx.fillStyle = `hsl(${p.hue}, 85%, 60%)`;
@@ -441,16 +582,9 @@
           ctx.restore();
         }
 
-        if(p.y > H + 50){
-          p.y = -50;
-          p.x = Math.random()*W;
-        }
+        if(p.y > H + 50){ p.y = -50; p.x = Math.random()*W; }
       }
-      if(performance.now()<end){
-        requestAnimationFrame(step);
-      }else{
-        ctx.clearRect(0,0,W,H);
-      }
+      if(performance.now()<end){ requestAnimationFrame(step); } else { ctx.clearRect(0,0,W,H); }
     }
     step();
     addEventListener('resize', ()=>{ W=c.width=innerWidth; H=c.height=innerHeight; }, {once:true});
@@ -497,13 +631,13 @@
     if(kind==='P'){ s.putts=(s.putts||0)+1; }
 
     if(countable.includes(kind)){
-      if(!s.startTs) s.startTs = Date.now(); // start timer bij eerste slag
+      if(!s.startTs) s.startTs = Date.now();
       s.strokes.push(kind); s.total=(s.total||0)+1;
     }
 
     if(kind==='ball'){  s.penalties.ball=(s.penalties.ball||0)+1;  s.strokes.push('⚪'); s.total=(s.total||0)+1; if(!s.startTs) s.startTs=Date.now(); }
     if(kind==='water'){ s.penalties.water=(s.penalties.water||0)+1; s.strokes.push('💧'); s.total=(s.total||0)+1; if(!s.startTs) s.startTs=Date.now(); }
-    if(kind==='bunker'){ s.penalties.bunker=(s.penalties.bunker||0)+1; s.strokes.push('🏜️'); /* geen straf */ }
+    if(kind==='bunker'){ s.penalties.bunker=(s.penalties.bunker||0)+1; s.strokes.push('🏜️'); }
 
     if(kind==='oob'){ s.penalties.oob=(s.penalties.oob||0)+1; s.strokes.push('🌲'); s.total=(s.total||0)+1; if(!s.startTs) s.startTs=Date.now(); }
     if(kind==='star'){ s.strokes.push('⭐'); }
@@ -511,7 +645,6 @@
 
     if(kind==='mulligan'){
       if(s.mulliganUsed){ alert('Mulligan al gebruikt op deze hole.'); return; }
-      // altijd de direct vorige slag terugdraaien (D/W/P/3–9/⚪/💧)
       const reversible=['D','W','P','3','4','5','6','7','8','9','⚪','💧'];
       if(s.strokes.length){
         const last = s.strokes[s.strokes.length-1];
@@ -527,17 +660,14 @@
       s.mulliganUsed=true; s.strokes.push('🎁');
     }
 
-    // UI bijwerken + bewaren
     me = me || {}; me.holes = me.holes || {}; me.holes[String(currentHole)] = s;
     updateScoreUI();
     persistHole(s);
   }
 
-  // bind knoppen
   document.querySelectorAll('[data-club]').forEach(b=>b.onclick=()=>addStroke(b.dataset.club));
   document.querySelectorAll('[data-special]').forEach(b=>b.onclick=()=>addStroke(b.dataset.special));
 
-  // vlag = hole klaar
   document.getElementById('flagBtn').onclick = async ()=>{
     const s = strokeState();
     if(!s.strokes.includes('⛳')) s.strokes.push('⛳');
@@ -550,7 +680,6 @@
       s.sticker=key;
       const img=document.getElementById('stickerImg'); const src=stickerImg(key); if(src){ img.src=src; img.style.display='block'; }
       if(key==='birdie' || key==='eagle' || key==='par') confettiRain(5000);
-      // broadcast event + overlay
       const playerDoc = await getDoc(doc(db,'games',gameId,'players',uid));
       const playerName = playerDoc.exists()? (playerDoc.data().name||'Player') : 'Player';
       await addDoc(collection(db,'games',gameId,'events'), {type:'sticker', hole:currentHole, playerName, sticker:key, at:serverTimestamp()});
@@ -561,17 +690,15 @@
     await persistHole(s);
     updateScoreUI();
 
-    // doorlopen (wrap)
     const [sH,eH]=rangeBounds();
     currentHole = currentHole<eH ? currentHole+1 : sH;
     updateHeader(); updateScoreUI();
   };
 
-  // navigatie wrap
   document.getElementById('prevHole').onclick = ()=>{ const[sH,eH]=rangeBounds(); currentHole = currentHole>sH ? currentHole-1 : eH; updateHeader(); updateScoreUI(); };
   document.getElementById('nextHole').onclick = ()=>{ const[sH,eH]=rangeBounds(); currentHole = currentHole<eH ? currentHole+1 : sH; updateHeader(); updateScoreUI(); };
 
-  /* ===== WINNAAR VIEREN ===== */
+  /* ===== LEADERBOARD / WINNER ===== */
   function grossForRange(holesObj, start, end){
     let gross = 0;
     for(let h=start; h<=end; h++){ gross += holesObj?.[String(h)]?.total || 0; }
@@ -612,11 +739,98 @@
   const endBtn = document.getElementById('endRoundBtn');
   if(endBtn){ endBtn.onclick = celebrateWinner; }
 
+  /* ===== GOLF COURSE: UI LOGICA ===== */
+
+  // Build holes table rows 1..18
+  function buildHolesTable(data){
+    const tbody = document.querySelector('#holesTable tbody');
+    tbody.innerHTML = '';
+    for(let i=1;i<=18;i++){
+      const d = data?.[i] || {par:4,distance:300,name:''};
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>H${String(i).padStart(2,'0')}</td>
+        <td><input type="number" min="3" max="6" step="1" value="${d.par ?? 4}" data-hole="${i}" data-field="par"></td>
+        <td><input type="number" min="60" max="650" step="1" value="${d.distance ?? 300}" data-hole="${i}" data-field="distance"></td>
+        <td><input type="text" value="${d.name ?? ''}" placeholder="bijv. Dogleg Left" data-hole="${i}" data-field="name"></td>
+      `;
+      tbody.appendChild(tr);
+    }
+  }
+
+  // Save meta (wedstrijd + course)
+  el('gcSaveMeta').onclick = async ()=>{
+    if(!gameId){ alert('Geen gameId in de URL (?game=...)'); return; }
+    const payload = {
+      name: el('gcGameName').value.trim() || null,
+      holeRange: el('gcHoleRange').value || '1-18',
+      defaultTeeTime: el('gcTeeTime').value || null,
+      defaultFlight: el('gcFlight').value?.trim() || null,
+      course: {
+        name: el('gcCourseName').value.trim() || null,
+        city: el('gcCourseCity').value.trim() || null
+      },
+      updatedAt: serverTimestamp()
+    };
+    await setDoc(doc(db,'games',gameId), payload, {merge:true});
+    alert('Wedstrijd en baan opgeslagen.');
+  };
+
+  // Fill defaults Par4 / 300m
+  el('gcFillPar4').onclick = ()=>{
+    buildHolesTable(blankHoles());
+  };
+
+  // Save holes
+  el('gcSaveHoles').onclick = async ()=>{
+    if(!gameId){ alert('Geen gameId in de URL (?game=...)'); return; }
+    const inputs = Array.from(document.querySelectorAll('#holesTable [data-hole]'));
+    const holes = {};
+    for(const input of inputs){
+      const h = Number(input.dataset.hole);
+      holes[h] = holes[h] || {par:4,distance:300,name:''};
+      const field = input.dataset.field;
+      let val = input.value;
+      if(field!=='name'){ val = Number(val||0); }
+      holes[h][field] = val;
+    }
+    await setDoc(doc(db,'games',gameId), {holes}, {merge:true});
+    alert('Holes opgeslagen.');
+  };
+
+  // Add / Edit player
+  el('addPlayerBtn').onclick = async ()=>{
+    if(!gameId){ alert('Geen gameId in de URL (?game=...)'); return; }
+    const name = el('plName').value.trim();
+    const handicap = Number(el('plHcp').value||0);
+    const flight = (el('plFlight').value||'').trim() || (el('gcFlight').value||'').trim() || null;
+    const teeTime = el('plTee').value || el('gcTeeTime').value || null;
+
+    if(!name){ alert('Naam is verplicht.'); return; }
+
+    const editingId = el('addPlayerBtn').dataset.editing;
+    if(editingId){
+      await setDoc(doc(db,'games',gameId,'players', editingId), {
+        name, handicap, flight, teeTime, updatedAt: serverTimestamp()
+      }, {merge:true});
+      el('addPlayerBtn').textContent = 'Speler toevoegen';
+      delete el('addPlayerBtn').dataset.editing;
+    }else{
+      // Als je je eigen player wil koppelen aan je uid, vul exact je inline naam/hcp in en wijzig daarna indien nodig
+      await addDoc(collection(db,'games',gameId,'players'), {
+        name, handicap, flight, teeTime, createdAt: serverTimestamp()
+      });
+    }
+
+    el('plName').value=''; el('plHcp').value=0; el('plFlight').value=''; el('plTee').value='';
+  };
+
   /* INIT */
   holesData = blankHoles();
+  buildHolesTable(holesData);
   updateHeader(); updateScoreUI();
 
-  // inline naam & hcp edits
+  // inline naam & hcp edits -> koppelen aan eigen spelerskaart (op uid)
   document.getElementById('playerNameInline').addEventListener('change', async ()=>{
     if(!gameId||!uid) return;
     const name = document.getElementById('playerNameInline').value.trim();
