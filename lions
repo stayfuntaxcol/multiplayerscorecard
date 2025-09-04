@@ -1,0 +1,947 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0e2a35" />
+  <title>Golfcourse Multiplayer Scorecard</title>
+  <style>
+  :root{
+    --bg:#0e2a35; --ink:#eaf8ff; --muted:#9fc0cf;
+    --panel:#133745; --panel2:#164554; --line:#092331; --btn:#1b6177; --btn2:#154a5a;
+    --touch:56px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial;background:var(--bg);color:var(--ink)}
+  .app{max-width:1100px;margin:0 auto;padding:12px 12px calc(88px + env(safe-area-inset-bottom))}
+  .header{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .badge{background:#e6f5fb;color:#0b2430;border-radius:.8rem;padding:.55rem .7rem;font-weight:800}
+  .badge.dim{background:#cfeef9}
+  .spacer{flex:1}
+  .layout{display:grid;grid-template-columns:1fr;gap:12px;margin-top:8px}
+  .card{background:var(--panel);border:2px solid var(--line);border-radius:12px;padding:10px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .tile{background:var(--panel2);border-radius:10px;padding:12px;text-align:center;font-weight:800}
+  .tile.huge{font-size:56px;line-height:1.05}
+  .tile.big{font-size:60px;line-height:1.05}
+  .pill{background:#0c2f3a;border:1px solid var(--line);border-radius:8px;padding:10px;color:var(--ink);width:100%}
+  .pill.biginput{font-size:1.1rem;font-weight:900}
+  .muted{color:var(--muted);font-size:.9rem}
+  .btn{display:inline-flex;align-items:center;justify-content:center;background:var(--btn);border:2px solid var(--line);border-radius:12px;min-height:var(--touch);font-size:1.05rem;font-weight:800;color:var(--ink);padding:.6rem .9rem;cursor:pointer;user-select:none;transition:.2s transform}
+  .btn:active{transform:translateY(1px)}
+  .btn.alt{background:var(--btn2)}
+  .btn.ghost{background:transparent;border-color:#0a2b39}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+  .sticker{position:relative;display:flex;align-items:center;justify-content:center;height:140px;background:#103947;border-radius:12px;overflow:hidden}
+  .sticker img{max-height:130px;max-width:100%}
+  .loggrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+  .loggrid .cell{background:#0c2f3a;border:1px solid var(--line);border-radius:8px;padding:8px;text-align:center;font-weight:900}
+  #confetti{position:fixed;inset:0;pointer-events:none}
+  .small{display:block;font-size:.9rem;font-weight:700;opacity:.95;margin-top:6px}
+  .scoreGrid{display:grid;grid-template-columns:1fr 1.2fr;gap:10px}
+  .view{display:none}.view.active{display:block}
+  @media (max-width:900px){ .scoreGrid{grid-template-columns:1fr} }
+
+  /* Tables & lists */
+  .table{width:100%;border-collapse:collapse}
+  .table th,.table td{border:1px solid var(--line);padding:6px;text-align:center}
+  .table th{background:#0c2f3a}
+  .table input, .table select{width:100%;background:#0b2f3a;border:1px solid #0a2732;color:var(--ink);border-radius:6px;padding:6px}
+  .inline{display:flex;gap:8px;flex-wrap:wrap}
+  .tag{background:#0c2f3a;border:1px solid var(--line);padding:.35rem .55rem;border-radius:.7rem;font-weight:800}
+  .list{display:grid;grid-template-columns:1fr;gap:8px}
+  .item{display:flex;align-items:center;justify-content:space-between;background:#0c2f3a;border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+  .sm{font-size:.9rem}
+
+  /* Toasts */
+  .toasts{position:fixed;right:12px;top:12px;display:flex;flex-direction:column;gap:8px;z-index:9999}
+  .toast{background:rgba(16,57,71,.95);border:1px solid #0a2b39;border-radius:10px;padding:10px 12px;box-shadow:0 10px 24px rgba(0,0,0,.28)}
+  .toast .title{font-weight:900}
+
+  /* Pretty bottom tabs */
+  .tabs.bottom{
+    position:fixed;left:0;right:0;bottom:0;z-index:50;
+    padding:10px 14px calc(10px + env(safe-area-inset-bottom));
+    background:linear-gradient(180deg, rgba(6,22,29,0) 0%, rgba(6,22,29,.55) 30%, rgba(6,22,29,.9) 100%);
+    display:flex;justify-content:center;
+  }
+  .tabs-inner{
+    display:flex;gap:8px;align-items:center;justify-content:space-between;
+    background:rgba(19,55,69,.75);
+    border:1px solid #0a2b39;border-radius:18px;padding:6px;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 10px 24px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.05);
+  }
+  .tabbtn{
+    appearance:none;border:0;outline:0;cursor:pointer;
+    color:#cfeef9;background:transparent;
+    padding:10px 14px;border-radius:12px;font-weight:900;
+    display:flex;align-items:center;gap:8px;
+    min-width:140px;justify-content:center;
+    transition: background .2s, transform .15s;
+  }
+  .tabbtn svg{opacity:.9}
+  .tabbtn:active{transform:translateY(1px)}
+  .tabbtn.active{
+    background:linear-gradient(180deg,#1a5e74 0%, #154a5a 100%);
+    color:#fff; box-shadow: inset 0 1px 0 rgba(255,255,255,.07), 0 0 0 1px #0a2b39;
+  }
+  .tablabel{letter-spacing:.4px}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="header">
+      <div id="gameTitle" class="badge">Golf Course</div>
+      <div id="holeHeader" class="badge dim">
+        H01 • Par ? • 000m • Tijd <span id="timeTop">0:00</span>
+      </div>
+      <div class="spacer"></div>
+    </div>
+
+    <div class="layout">
+      <div class="card">
+        <!-- ===== SCORE CARD ===== -->
+        <div id="view-score" class="view active">
+          <div class="row" style="margin-bottom:8px">
+            <div>
+              <div class="muted">Speler</div>
+              <input id="playerNameInline" class="pill biginput" placeholder="Jouw naam">
+            </div>
+            <div>
+              <div class="muted">Handicap</div>
+              <input id="playerHcpInline" class="pill biginput" type="number" step="1" value="0">
+            </div>
+          </div>
+          <div class="row" style="margin-bottom:8px">
+            <div>
+              <div class="muted">Flight</div>
+              <input id="playerFlightInline" class="pill biginput" placeholder="A / 1 / …">
+            </div>
+            <div>
+              <div class="muted">TeeTime</div>
+              <input id="playerTeeInline" class="pill biginput" type="time">
+            </div>
+          </div>
+
+          <div class="row">
+            <div id="holeCode" class="tile huge">
+              H01
+              <span class="small muted">Par <span id="parUnder">?</span></span>
+            </div>
+            <div id="holeDist" class="tile huge">000</div>
+          </div>
+
+          <div class="scoreGrid" style="margin-top:10px">
+            <div>
+              <div class="tile" style="display:flex;align-items:center;justify-content:space-between;font-size:36px;font-weight:900;margin-bottom:8px;padding:12px 14px">
+                <span>Slag <span id="strokeAbove">0</span></span>
+                <span class="muted" style="font-size:20px">Par <span id="parRight">?</span></span>
+              </div>
+              <div class="sticker" id="stickerBox">
+                <img id="stickerImg" src="" alt="Beloning" style="display:none">
+              </div>
+            </div>
+            <div>
+              <div class="grid5" style="margin-bottom:8px">
+                <button class="btn" data-club="D">D</button>
+                <button class="btn" data-club="3">3</button>
+                <button class="btn" data-club="4">4</button>
+                <button class="btn" data-club="5">5</button>
+                <button class="btn" data-club="6">6</button>
+                <button class="btn" data-club="7">7</button>
+                <button class="btn" data-club="8">8</button>
+                <button class="btn" data-club="9">9</button>
+                <button class="btn" data-club="W">W</button>
+                <button class="btn" data-club="P">P</button>
+              </div>
+              <div class="grid4">
+                <button class="btn alt" data-special="ball"   aria-label="nieuwe bal">⚪</button>
+                <button class="btn alt" data-special="bunker" aria-label="bunker">🏜️</button>
+                <button class="btn alt" data-special="water"  aria-label="water">💧</button>
+                <button class="btn alt" data-special="mulligan" aria-label="mulligan">🎁</button>
+              </div>
+              <div class="grid4" style="margin-top:8px">
+                <button class="btn alt" data-special="oob" aria-label="out of bounds">🌲</button>
+                <button class="btn alt" data-special="star" aria-label="highlight shot">⭐</button>
+                <button class="btn alt" data-special="resign" aria-label="opgegeven">🔴</button>
+                <button id="flagBtn" class="btn alt" aria-label="hole klaar" title="Hole klaar">
+                  <svg width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M5 3v18" stroke="#8fb3ff" stroke-width="2"/>
+                    <path d="M6 4h11l-3 3 3 3H6z" fill="#3b82f6"/>
+                    <circle cx="6" cy="20" r="2" fill="#0b2740"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="row" style="margin-top:10px">
+            <div>
+              <div class="muted" style="margin-bottom:6px">Slaglog</div>
+              <div id="strokeLog" class="loggrid"></div>
+            </div>
+            <div>
+              <div class="muted" style="margin-bottom:6px">Totaal hole</div>
+              <div class="pill" style="font-size:22px;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center">
+                <span id="holeTotal">0</span>
+                <span id="overPar" style="color:#9fb0ba;font-weight:800">±0</span>
+              </div>
+              <div id="deltaTxt" class="muted">t.o.v. Par: 0</div>
+              <div class="row" style="margin-top:8px">
+                <div class="pill">Putts: <span id="puts">0</span></div>
+                <div class="pill">Ball: <span id="penBall">0</span></div>
+              </div>
+              <div class="row" style="margin-top:6px">
+                <div class="pill">Water: <span id="penWater">0</span></div>
+                <div class="pill">Bunker: <span id="penBunker">0</span></div>
+              </div>
+              <div class="row" style="margin-top:6px">
+                <button id="prevHole" class="btn">Vorige</button>
+                <button id="nextHole" class="btn">Volgende</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== GOLF COURSE (beheer) ===== -->
+        <div id="view-settings" class="view">
+          <h3 style="margin:6px 0 10px">Golf Course • Wedstrijd & Baan</h3>
+
+          <!-- Wedstrijd meta -->
+          <div class="tile" style="text-align:left;margin-bottom:10px">
+            <div class="inline">
+              <div style="flex:1;min-width:220px">
+                <div class="muted">Wedstrijdnaam</div>
+                <input id="gcGameName" class="pill" placeholder="Bijv. Zomerbokaal">
+              </div>
+              <div style="width:150px">
+                <div class="muted">Hole-range</div>
+                <select id="gcHoleRange" class="pill">
+                  <option value="1-18">1–18</option>
+                  <option value="1-9">1–9</option>
+                  <option value="10-18">10–18</option>
+                </select>
+              </div>
+              <div style="width:160px">
+                <div class="muted">TeeTime (default)</div>
+                <input id="gcTeeTime" class="pill" type="time">
+              </div>
+              <div style="width:140px">
+                <div class="muted">Flight (default)</div>
+                <input id="gcFlight" class="pill" placeholder="A / 1 / …">
+              </div>
+            </div>
+            <div class="inline" style="margin-top:8px">
+              <div style="flex:1;min-width:220px">
+                <div class="muted">Golfbaan</div>
+                <input id="gcCourseName" class="pill" placeholder="Course naam">
+              </div>
+              <div style="flex:1;min-width:180px">
+                <div class="muted">Plaats</div>
+                <input id="gcCourseCity" class="pill" placeholder="Plaats">
+              </div>
+              <button id="gcSaveMeta" class="btn">Opslaan</button>
+              <button id="gcShareLink" class="btn alt">Deel link met spelers</button>
+            </div>
+          </div>
+
+          <!-- Holes editor -->
+          <div class="card" style="border-color:#0a2b39">
+            <div class="inline" style="align-items:center;justify-content:space-between;margin-bottom:6px">
+              <div style="font-weight:800">Holes (Par • Afstand • Naam)</div>
+              <div class="inline">
+                <button id="gcFillPar4" class="btn alt sm" style="min-height:auto">Par4 • 300m</button>
+                <button id="gcSaveHoles" class="btn sm" style="min-height:auto">Holes opslaan</button>
+              </div>
+            </div>
+            <table class="table" id="holesTable">
+              <thead><tr><th>#</th><th>Par</th><th>m</th><th>Naam (optioneel)</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+
+          <!-- Players / Flights -->
+          <div class="card" style="border-color:#0a2b39;margin-top:10px">
+            <div style="font-weight:800;margin-bottom:8px">Spelers & Flights</div>
+
+            <div class="inline">
+              <input id="plName" class="pill" placeholder="Naam speler" style="flex:2;min-width:180px">
+              <input id="plHcp" class="pill" type="number" step="1" value="0" style="width:110px" placeholder="HCP">
+              <input id="plFlight" class="pill" placeholder="Flight" style="width:120px">
+              <input id="plTee" class="pill" type="time" style="width:150px" placeholder="TeeTime">
+              <button id="addPlayerBtn" class="btn">Speler toevoegen</button>
+            </div>
+            <div id="playersList" class="list" style="margin-top:10px"></div>
+          </div>
+        </div>
+
+        <!-- ===== LEADERBOARD ===== -->
+        <div id="view-leader" class="view">
+          <h3>Leaderboard</h3>
+          <div id="leaderFull" class="card"></div>
+          <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+            <button id="endRoundBtn" class="btn">Einde ronde • Vier winnaar</button>
+            <button id="refreshLbBtn" class="btn ghost">Vernieuw</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom tabs -->
+  <nav class="tabs bottom" role="navigation" aria-label="Tabs">
+    <div class="tabs-inner">
+      <button class="tabbtn active" data-tab="score" title="Score Card">
+        <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5 3h14v4H5zM5 9h14v12H5zM8 12h8v2H8zm0 4h6v2H8z"/></svg>
+        <span class="tablabel">SCORE CARD</span>
+      </button>
+      <button class="tabbtn" data-tab="leader" title="Leaderboard">
+        <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 10h4v10H4zM10 4h4v16h-4zM16 7h4v13h-4z"/></svg>
+        <span class="tablabel">LEADERBOARD</span>
+      </button>
+      <button class="tabbtn" data-tab="settings" title="Golf Course">
+        <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 8a4 4 0 110 8 4 4 0 010-8m7.94 3a8 8 0 00-.34-1l2.05-1.59-2-3.46-2.41.8a8 8 0 00-1.73-1L15 1h-6l-.51 2.76a8 8 0 00-1.73 1l-2.41-.8-2 3.46L3.4 10a8 8 0 000 4l-2.05 1.59 2 3.46 2.41-.8c.54.41 1.12.76 1.73 1L9 23h6l.51-2.76c.61-.24 1.19-.59 1.73-1l2.41.8 2-3.46L19.6 14c.15-.64.26-1.31.34-2z"/></svg>
+        <span class="tablabel">GOLF COURSE</span>
+      </button>
+    </div>
+  </nav>
+
+  <div class="toasts" id="toasts"></div>
+  <canvas id="confetti"></canvas>
+
+  <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+  import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+  import {
+    getFirestore, doc, setDoc, getDoc, onSnapshot, serverTimestamp,
+    collection, addDoc, getDocs, deleteDoc, query, orderBy
+  } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+
+  /* Firebase config */
+  const firebaseConfig = {
+    apiKey: "AIzaSyBmLsJ5l3_733r3TMSMcQ3XTB7B5-lStTs",
+    authDomain: "golfcourse-mp-scorecard.firebaseapp.com",
+    projectId: "golfcourse-mp-scorecard",
+    storageBucket: "golfcourse-mp-scorecard.appspot.com",
+    messagingSenderId: "758687332564",
+    appId: "1:758687332564:web:7db1d2f2f27c3282f2e341"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db   = getFirestore(app);
+
+  /* Tabs */
+  const views = {
+    score: document.getElementById('view-score'),
+    leader: document.getElementById('view-leader'),
+    settings: document.getElementById('view-settings')
+  };
+  document.querySelectorAll('.tabbtn').forEach(btn=>{
+    btn.onclick=()=>{
+      document.querySelectorAll('.tabbtn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      Object.values(views).forEach(v=>v.classList.remove('active'));
+      views[btn.dataset.tab].classList.add('active');
+    };
+  });
+
+  /* State */
+  let uid=null;
+  let gameId = new URLSearchParams(location.search).get('game') || null;
+  let currentHole = 1;
+  let holeRange = '1-18';
+  let holesData = {};
+  let me = null;
+  let unsubPlayers = null;
+  let shownEventIds = new Set();
+
+  const el = id => document.getElementById(id);
+  const rangeBounds = ()=> holeRange==='1-9' ? [1,9] : holeRange==='10-18' ? [10,18] : [1,18];
+
+  /* Helpers */
+  function blankHoles(){ const o={}; for(let i=1;i<=18;i++) o[i]={par:4,distance:300,name:''}; return o; }
+  function mmss(sec){ const m=Math.floor(sec/60); const s=String(sec%60).padStart(2,'0'); return `${m}:${s}`; }
+  function defaultHole(){
+    return { strokes:[], putts:0, penalties:{ball:0,water:0,bunker:0,oob:0}, total:0, sticker:null,
+             startTs:null, endTs:null, duration:0, mulliganUsed:false, resigned:false };
+  }
+  function strokeState(){
+    const all=(me&&me.holes)||{}; const key=String(currentHole);
+    return JSON.parse(JSON.stringify(all[key] || defaultHole()));
+  }
+  async function persistHole(hstate){
+    if(!gameId||!uid) return;
+    me = me || {}; me.holes = me.holes || {};
+    me.holes[String(currentHole)] = hstate;
+    await setDoc(doc(db,'games',gameId,'scores',uid), {holes:me.holes},{merge:true});
+  }
+
+  /* Tijd alleen bovenin */
+  function updateTimeUI(h){
+    const tTop = document.getElementById('timeTop'); if(!tTop) return;
+    let sec=0; if(h.endTs){ sec=h.duration||0; } else if(h.startTs){ sec=Math.floor((Date.now()-h.startTs)/1000); }
+    tTop.textContent = mmss(sec);
+  }
+
+  function updateScoreUI(){
+    const h = strokeState();
+    el('puts').textContent      = h.putts||0;
+    el('penBall').textContent   = h.penalties?.ball||0;
+    el('penWater').textContent  = h.penalties?.water||0;
+    el('penBunker').textContent = h.penalties?.bunker||0;
+
+    const log = el('strokeLog');
+    const BLUE_FLAG_SVG = '<svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M5 3v18" stroke="#8fb3ff" stroke-width="2"/><path d="M6 4h11l-3 3 3 3H6z" fill="#3b82f6"/></svg>';
+    log.innerHTML = (h.strokes||[]).slice(-16).map(s=> s==='⛳' ? `<div class="cell">${BLUE_FLAG_SVG}</div>` : `<div class="cell">${s}</div>`).join('');
+
+    const par = holesData[currentHole]?.par ?? 0;
+    el('parUnder').textContent = par ?? '?';
+    el('parRight').textContent = par ?? '?';
+
+    el('holeTotal').textContent = h.total||0;
+    el('overPar').textContent   = ((h.total||0)-par)>0?`+${(h.total||0)-par}`:`${(h.total||0)-par}`;
+    el('deltaTxt').textContent  = `t.o.v. Par: ${(h.total||0)-par}`;
+    const sa = document.getElementById('strokeAbove'); if(sa) sa.textContent=h.total||0;
+
+    updateTimeUI(h);
+
+    const img = document.getElementById('stickerImg');
+    if(h.sticker){ img.src = stickerImg(h.sticker)||''; img.style.display='block'; } else { img.src=''; img.style.display='none'; }
+  }
+
+  function updateHeader(){
+    const d=holesData[currentHole]||{par:'?',distance:'000'};
+    el('holeHeader').innerHTML = `H${String(currentHole).padStart(2,'0')} • Par ${d.par} • ${d.distance}m • Tijd <span id="timeTop">0:00</span>`;
+    el('holeCode').innerHTML = `H${String(currentHole).padStart(2,'0')}
+      <span class="small muted">Par <span id="parUnder">${d.par??'?'}<\/span><\/span>`;
+    el('holeDist').textContent = d.distance;
+  }
+
+  /* Auth & game */
+  onAuthStateChanged(auth, async (user)=>{
+    if(!user){ await signInAnonymously(auth); return; }
+    uid=user.uid;
+    if(!gameId){ gameId = await createNewGame(uid); }
+    if(gameId) subscribeGame(gameId);
+  });
+
+  async function createNewGame(hostUid){
+    const payload = {
+      name: 'Nieuwe Wedstrijd',
+      holeRange: '1-18',
+      defaultTeeTime: null,
+      defaultFlight: null,
+      course: { name:null, city:null },
+      holes: blankHoles(),
+      hostUid: hostUid || null,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    };
+    const ref = await addDoc(collection(db,'games'), payload);
+    history.replaceState({}, '', `${location.pathname}?game=${ref.id}`);
+    return ref.id;
+  }
+
+  /* Subscriptions */
+  async function subscribeGame(id){
+    onSnapshot(doc(db,'games',id),(snap)=>{
+      if(!snap.exists()) return;
+      const g=snap.data();
+      holeRange = g.holeRange || '1-18';
+      holesData = g.holes || blankHoles();
+
+      const nameBadge = g.name || 'Golf Course';
+      const flightBadge = g.defaultFlight ? ` • Flight ${g.defaultFlight}` : (g.flight ? ` • Flight ${g.flight}` : '');
+      el('gameTitle').textContent = `${nameBadge}${flightBadge}`;
+
+      updateHeader(); updateScoreUI();
+
+      // sync GC form
+      el('gcGameName').value = g.name || '';
+      el('gcHoleRange').value = g.holeRange || '1-18';
+      el('gcTeeTime').value = g.defaultTeeTime || g.teeTime || '';
+      el('gcFlight').value = g.defaultFlight || g.flight || '';
+      el('gcCourseName').value = g.course?.name || '';
+      el('gcCourseCity').value = g.course?.city || '';
+
+      buildHolesTable(holesData);
+      recomputeLeaderboard();
+    });
+
+    onSnapshot(doc(db,'games',id,'scores',uid),(snap)=>{
+      if(!snap.exists()) return;
+      me = me || {}; me.holes = snap.data().holes||{};
+      updateScoreUI();
+    });
+
+    // inline speler sync
+    onSnapshot(doc(db,'games',id,'players',uid),(snap)=>{
+      if(snap.exists()){
+        const p=snap.data();
+        el('playerNameInline').value = p.name || '';
+        el('playerHcpInline').value  = p.handicap ?? 0;
+        el('playerFlightInline').value = p.flight || '';
+        el('playerTeeInline').value = p.teeTime || '';
+      }
+    });
+
+    listenPlayers();
+    startLeaderboardListeners(id);
+    listenStickerEvents(id); // iedereen ziet stickers live
+  }
+
+  function listenPlayers(){
+    if(!gameId) return;
+    if(unsubPlayers) unsubPlayers();
+    const qPlayers = query(collection(db,'games',gameId,'players'));
+    unsubPlayers = onSnapshot(qPlayers, (snap)=>{
+      const wrap = el('playersList'); wrap.innerHTML = '';
+      snap.forEach(d=>{
+        const p=d.data();
+        const line = document.createElement('div');
+        line.className='item';
+        line.innerHTML = `
+          <div>
+            <div style="font-weight:800">${p.name || '—'} <span class="tag sm">HCP ${p.handicap ?? 0}</span></div>
+            <div class="muted sm">Flight: ${p.flight || '-'} • Tee: ${p.teeTime || '-'}</div>
+          </div>
+          <div class="inline">
+            <button class="btn alt sm" style="min-height:auto" data-edit="${d.id}">Edit</button>
+            <button class="btn sm" style="min-height:auto;background:#7a2030" data-del="${d.id}">Verwijder</button>
+          </div>
+        `;
+        wrap.appendChild(line);
+      });
+
+      wrap.querySelectorAll('[data-del]').forEach(b=>{
+        b.onclick = async ()=>{ await deleteDoc(doc(db,'games',gameId,'players', b.dataset.del)); };
+      });
+      wrap.querySelectorAll('[data-edit]').forEach(b=>{
+        b.onclick = async ()=>{
+          const ref = doc(db,'games',gameId,'players', b.dataset.edit);
+          const snap = await getDoc(ref); if(!snap.exists()) return;
+          const p=snap.data();
+          el('plName').value = p.name || '';
+          el('plHcp').value = p.handicap ?? 0;
+          el('plFlight').value = p.flight || '';
+          el('plTee').value = p.teeTime || '';
+          el('addPlayerBtn').textContent = 'Opslaan wijzigingen';
+          el('addPlayerBtn').dataset.editing = b.dataset.edit;
+        };
+      });
+    });
+  }
+
+  /* Stickers / effects */
+  function stickerFor(total,par,extra){
+    const d=total-par;
+    if(total===8) return 'snowman';
+    if(extra.putts>=3) return 'three-putt';
+    if(d<=-3) return 'albatross';
+    if(d===-2) return 'eagle';
+    if(d===-1) return 'birdie';
+    if(d===0)  return 'par';
+    if(d===1)  return 'bogey';
+    if(d===2)  return 'double-bogey';
+    if(d>=3)   return 'triple-bogey';
+    return null;
+  }
+  const stickerImg = k=>({
+    'albatross':'assets/albatross.png',
+    'eagle':'assets/eagle.png',
+    'birdie':'assets/birdie.png',
+    'par':'assets/par.png',
+    'bogey':'assets/bogey.png',
+    'double-bogey':'assets/double-bogey.png',
+    'triple-bogey':'assets/triple-bogey.png',
+    'snowman':'assets/snowman.png',
+    'three-putt':'assets/three-putt.png',
+    'breakfast':'assets/breakfast.png',
+    'mulligan':'assets/mulligan.png'
+  })[k];
+
+  /* Confetti: sneller, minder slingers */
+  function confettiRain(ms=4000){
+    const c=document.getElementById('confetti'),ctx=c.getContext('2d');
+    let W=c.width=innerWidth,H=c.height=innerHeight;
+    let parts=Array.from({length:90},()=>({x:Math.random()*W,y:-20-Math.random()*H,r:2+Math.random()*4,vy:3+Math.random()*4,vx:(Math.random()-.5)*1.6}));
+    const end=performance.now()+ms;
+    (function tick(){
+      ctx.clearRect(0,0,W,H);
+      parts.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; if(p.y>H+10){ p.y=-10; p.x=Math.random()*W; }
+        ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fillStyle=`hsl(${Math.random()*360},100%,65%)`; ctx.fill(); });
+      if(performance.now()<end) requestAnimationFrame(tick); else ctx.clearRect(0,0,W,H);
+    })();
+    addEventListener('resize',()=>{W=c.width=innerWidth; H=c.height=innerHeight;},{once:true});
+  }
+
+  function royalConfetti(durationMs=12000){
+    const c = document.getElementById('confetti'); const ctx = c.getContext('2d');
+    let W = c.width = innerWidth, H = c.height = innerHeight;
+    const EMOJI = ['👑','⭐','🎉','🎊']; const pieces = [];
+    for(let i=0;i<140;i++){
+      pieces.push({type:'emoji',char:EMOJI[Math.floor(Math.random()*EMOJI.length)],x:Math.random()*W,y:-20-Math.random()*H,vy:2.2+Math.random()*3.2,vx:(Math.random()-.5)*1.4,rot:Math.random()*Math.PI*2,rSpeed:(Math.random()-.5)*0.06,size:18+Math.random()*16});
+    }
+    for(let i=0;i<20;i++){
+      pieces.push({type:'streamer',x:Math.random()*W,y:-40-Math.random()*H,vy:2+Math.random()*2.5,vx:(Math.random()-.5)*0.8,w:6+Math.random()*10,h:60+Math.random()*120,hue:Math.floor(Math.random()*360),alpha:.8});
+    }
+    const end = performance.now()+durationMs;
+    function step(){
+      ctx.clearRect(0,0,W,H);
+      for(const p of pieces){
+        p.x+=p.vx; p.y+=p.vy;
+        if(p.type==='emoji'){
+          p.rot+=p.rSpeed; ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot);
+          ctx.font=`${p.size}px system-ui, Apple Color Emoji, Segoe UI Emoji`; ctx.textAlign='center'; ctx.textBaseline='middle';
+          ctx.fillText(p.char,0,0); ctx.restore();
+        }else{
+          ctx.save(); ctx.globalAlpha=p.alpha; ctx.fillStyle=`hsl(${p.hue},85%,60%)`; ctx.translate(p.x,p.y); ctx.rotate((p.x+p.y)/160); ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h); ctx.restore();
+        }
+        if(p.y>H+50){ p.y=-50; p.x=Math.random()*W; }
+      }
+      if(performance.now()<end){ requestAnimationFrame(step); } else { ctx.clearRect(0,0,W,H); }
+    }
+    step();
+    addEventListener('resize', ()=>{ W=c.width=innerWidth; H=c.height=innerHeight; }, {once:true});
+  }
+
+  function bigSticker(text,key){
+    const src = stickerImg(key); if(!src) return;
+    const overlay=document.createElement('div');
+    overlay.style.position='fixed'; overlay.style.inset='0'; overlay.style.background='rgba(0,0,0,.6)';
+    overlay.style.display='flex'; overlay.style.alignItems='center'; overlay.style.justifyContent='center'; overlay.style.zIndex=10000;
+    const box=document.createElement('div');
+    box.style.background='rgba(8,26,32,.95)'; box.style.border='3px solid #0a2732'; box.style.borderRadius='16px';
+    box.style.padding='16px 20px'; box.style.display='flex'; box.style.flexDirection='column'; box.style.alignItems='center'; box.style.gap='10px';
+    box.innerHTML=`<img src="${src}" style="height:120px"/><div style="font-size:24px;font-weight:900">${text}</div><div class="muted" style="font-size:16px">${key}</div>`;
+    overlay.appendChild(box); document.body.appendChild(overlay);
+    setTimeout(()=>overlay.remove(), 3200);
+  }
+
+  function bigWinnerOverlay(name){
+    const overlay = document.createElement('div');
+    overlay.style.position='fixed'; overlay.style.inset='0'; overlay.style.background='rgba(0,0,0,.55)'; overlay.style.backdropFilter='blur(2px)';
+    overlay.style.display='flex'; overlay.style.flexDirection='column'; overlay.style.alignItems='center'; overlay.style.justifyContent='center';
+    overlay.style.gap='12px'; overlay.style.zIndex=10050;
+    const box = document.createElement('div');
+    box.style.background='rgba(8,26,32,.97)'; box.style.border='3px solid #0a2732'; box.style.borderRadius='18px'; box.style.padding='18px 22px'; box.style.textAlign='center'; box.style.maxWidth='90vw';
+    box.innerHTML = `
+      <div style="font-size:54px;line-height:1.1">👑⭐🎉🎊</div>
+      <div style="font-size:26px;font-weight:900;margin-top:6px">Gefeliciteerd ${name}!</div>
+      <div class="muted" style="font-size:18px;margin-top:4px">Je bent de koning van deze ronde!</div>
+      <div style="font-size:18px;margin-top:8px">Je hebt wel een heerlijk koud biertje verdiend!</div>
+      <div style="font-size:44px;margin-top:8px">🍻</div>`;
+    overlay.appendChild(box); document.body.appendChild(overlay);
+    setTimeout(()=> overlay.remove(), 8000);
+  }
+
+  /* Score interacties */
+  function addStroke(kind){
+    const s = strokeState();
+    const countable=['D','W','P','3','4','5','6','7','8','9'];
+    if(kind==='P'){ s.putts=(s.putts||0)+1; }
+    if(countable.includes(kind)){ if(!s.startTs) s.startTs=Date.now(); s.strokes.push(kind); s.total=(s.total||0)+1; }
+    if(kind==='ball'){  s.penalties.ball=(s.penalties.ball||0)+1; s.strokes.push('⚪'); s.total=(s.total||0)+1; if(!s.startTs) s.startTs=Date.now(); }
+    if(kind==='water'){ s.penalties.water=(s.penalties.water||0)+1; s.strokes.push('💧'); s.total=(s.total||0)+1; if(!s.startTs) s.startTs=Date.now(); }
+    if(kind==='bunker'){ s.penalties.bunker=(s.penalties.bunker||0)+1; s.strokes.push('🏜️'); }
+    if(kind==='oob'){ s.penalties.oob=(s.penalties.oob||0)+1; s.strokes.push('🌲'); s.total=(s.total||0)+1; if(!s.startTs) s.startTs=Date.now(); }
+    if(kind==='star'){ s.strokes.push('⭐'); }
+    if(kind==='resign'){ s.resigned=true; s.strokes.push('🔴'); }
+    if(kind==='mulligan'){
+      if(s.mulliganUsed){ alert('Mulligan al gebruikt op deze hole.'); return; }
+      const reversible=['D','W','P','3','4','5','6','7','8','9','⚪','💧'];
+      if(s.strokes.length){
+        const last = s.strokes[s.strokes.length-1];
+        if(reversible.includes(last)){ s.strokes.pop(); s.total=Math.max(0,(s.total||0)-1); }
+        else{ for(let i=s.strokes.length-1;i>=0;i--){ if(reversible.includes(s.strokes[i])){ s.strokes.splice(i,1); s.total=Math.max(0,(s.total||0)-1); break; } } }
+      }
+      s.mulliganUsed=true; s.strokes.push('🎁');
+    }
+    me = me || {}; me.holes = me.holes || {}; me.holes[String(currentHole)] = s;
+    updateScoreUI(); persistHole(s);
+  }
+
+  document.querySelectorAll('[data-club]').forEach(b=>b.onclick=()=>addStroke(b.dataset.club));
+  document.querySelectorAll('[data-special]').forEach(b=>b.onclick=()=>addStroke(b.dataset.special));
+
+  document.getElementById('flagBtn').onclick = async ()=>{
+    const s = strokeState();
+    if(!s.strokes.includes('⛳')) s.strokes.push('⛳');
+    if(!s.startTs) s.startTs = Date.now();
+    if(!s.endTs){ s.endTs = Date.now(); s.duration = Math.floor((s.endTs - s.startTs)/1000); }
+
+    const par = holesData[currentHole]?.par ?? 0;
+    const key = stickerFor(s.total, par, s);
+    if(key){
+      s.sticker=key;
+      const img=document.getElementById('stickerImg'); const src=stickerImg(key); if(src){ img.src=src; img.style.display='block'; }
+      if(key==='birdie' || key==='eagle' || key==='par') confettiRain(3200);
+      const playerDoc = await getDoc(doc(db,'games',gameId,'players',uid));
+      const playerName = playerDoc.exists()? (playerDoc.data().name||'Player') : 'Player';
+      // Broadcast naar iedereen
+      await addDoc(collection(db,'games',gameId,'events'), {type:'sticker', hole:currentHole, playerName, sticker:key, at:serverTimestamp()});
+      bigSticker(`${playerName} • H${String(currentHole).padStart(2,'0')}`, key);
+    }
+
+    me = me || {}; me.holes = me.holes || {}; me.holes[String(currentHole)] = s;
+    await persistHole(s);
+    updateScoreUI();
+
+    const [sH,eH]=rangeBounds();
+    currentHole = currentHole<eH ? currentHole+1 : sH;
+    updateHeader(); updateScoreUI();
+  };
+
+  document.getElementById('prevHole').onclick = ()=>{ const[sH,eH]=rangeBounds(); currentHole = currentHole>sH ? currentHole-1 : eH; updateHeader(); updateScoreUI(); };
+  document.getElementById('nextHole').onclick = ()=>{ const[sH,eH]=rangeBounds(); currentHole = currentHole<eH ? currentHole+1 : sH; updateHeader(); updateScoreUI(); };
+
+  /* Leaderboard */
+  const LB = { players:{}, scores:{}, holesMeta:()=>holesData, range:()=>holeRange };
+  const medal = i => (i===0?'🥇':i===1?'🥈':i===2?'🥉':'');
+  const fmtTime = sec => { if(!sec||sec<=0) return '—'; const h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60), s=sec%60; return h?`${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`:`${m}:${String(s).padStart(2,'0')}`; };
+  const rangeBoundsFrom = rg => rg==='10-18'?[10,18]:rg==='1-9'?[1,9]:[1,18];
+  function parSumForRange(holes,start,end){ let sum=0; for(let h=start; h<=end; h++) sum += Number(holes?.[h]?.par||4); return sum; }
+  function grossForRange(holesObj,start,end){ let gross=0; for(let h=start; h<=end; h++) gross += Number(holesObj?.[String(h)]?.total||0); return gross; }
+  function durationForRange(holesObj,start,end){ let sum=0; for(let h=start; h<=end; h++) sum += Number(holesObj?.[String(h)]?.duration||0); return sum; }
+  function finishedCount(holesObj,start,end){ let n=0; for(let h=start; h<=end; h++) if(holesObj?.[String(h)]?.endTs) n++; return n; }
+  function countSticker(holesObj,start,end,key){ let n=0; for(let h=start; h<=end; h++) if(holesObj?.[String(h)]?.sticker===key) n++; return n; }
+
+  const STICKER_ORDER = ['albatross','eagle','birdie','par','bogey','double-bogey','triple-bogey','snowman','three-putt','mulligan'];
+  const STICKER_EMOJI = {
+    'albatross':'🕊️','eagle':'🦅','birdie':'🐦','par':'✅','bogey':'➖','double-bogey':'➖➖','triple-bogey':'➖➖➖','snowman':'⛄','three-putt':'⛳️×3','mulligan':'🎁'
+  };
+  function stickerChipsFor(holes,start,end){
+    const chips=[];
+    for(const k of STICKER_ORDER){
+      const c = countSticker(holes,start,end,k);
+      if(c>0){
+        const label = STICKER_EMOJI[k] || k;
+        chips.push(`<span class="tag sm" title="${k}">${label}×${c}</span>`);
+      }
+    }
+    return chips.join(' ');
+  }
+
+  function recomputeLeaderboard(){
+    const cont = document.getElementById('leaderFull'); if(!cont) return;
+    const [start,end] = rangeBoundsFrom(LB.range());
+    const parSum = parSumForRange(LB.holesMeta(), start, end);
+
+    const rows = Object.entries(LB.scores).map(([uid_, sdoc])=>{
+      const holes = sdoc?.holes||{};
+      const p = LB.players[uid_] || {};
+      const gross = grossForRange(holes,start,end);
+      const hcp = Number(p.handicap||0);
+      const net = gross - hcp;
+      const toPar = gross - parSum;
+      const dur = durationForRange(holes,start,end);
+      const done = finishedCount(holes,start,end);
+      const chips = stickerChipsFor(holes,start,end);
+      return { uid:uid_, name:p.name||'—', flight:p.flight||'-', tee:p.teeTime||'-', hcp, gross, net, toPar, done, total:(end-start+1), dur, chips };
+    });
+
+    rows.sort((a,b)=> a.net-b.net || a.gross-b.gross || a.dur-b.dur || a.name.localeCompare(b.name));
+
+    cont.innerHTML = `
+      <table class="table" style="width:100%">
+        <thead>
+          <tr>
+            <th>#</th><th>Speler</th><th>Flight</th><th>Tee</th>
+            <th>Gross</th><th>HCP</th><th>Net</th><th>±Par</th>
+            <th>Holes</th><th>Tijd</th><th>Stickers</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map((r,i)=>`
+            <tr>
+              <td>${medal(i) || (i+1)}</td>
+              <td style="text-align:left;font-weight:800">${r.name}</td>
+              <td>${r.flight}</td>
+              <td>${r.tee}</td>
+              <td>${r.gross||0}</td>
+              <td>${r.hcp||0}</td>
+              <td style="font-weight:900">${r.net||0}</td>
+              <td>${r.toPar>0?`+${r.toPar}`:r.toPar}</td>
+              <td>${r.done}/${r.total}</td>
+              <td>${fmtTime(r.dur)}</td>
+              <td style="text-align:left">${r.chips||''}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+      <div class="muted sm" style="margin-top:6px">
+        Range: H${String(start).padStart(2,'0')}–H${String(end).padStart(2,'0')} • Par som: ${parSum}
+      </div>`;
+  }
+
+  function startLeaderboardListeners(id){
+    onSnapshot(collection(db,'games',id,'players'), snap=>{
+      LB.players = {}; snap.forEach(d=> LB.players[d.id]=d.data()); recomputeLeaderboard();
+    });
+    onSnapshot(collection(db,'games',id,'scores'), snap=>{
+      LB.scores = {}; snap.forEach(d=> LB.scores[d.id]=d.data()); recomputeLeaderboard();
+    });
+  }
+
+  async function celebrateWinner(){
+    if(!gameId) return;
+    const gSnap = await getDoc(doc(db,'games',gameId));
+    const holeRangeVal = gSnap.exists() ? (gSnap.data().holeRange || '1-18') : '1-18';
+    const [start,end] = holeRangeVal==='10-18' ? [10,18] : holeRangeVal==='1-9' ? [1,9] : [1,18];
+
+    const playersSnap = await getDocs(collection(db,'games',gameId,'players'));
+    const players = {}; playersSnap.forEach(d=> players[d.id] = d.data());
+
+    const scoresSnap = await getDocs(collection(db,'games',gameId,'scores'));
+
+    let winnerId = null, bestNet = Infinity;
+    scoresSnap.forEach(sdoc=>{
+      const uid_ = sdoc.id, sdata = sdoc.data() || {};
+      const gross = grossForRange(sdata.holes||{}, start, end);
+      const hcp = players[uid_]?.handicap || 0;
+      const net = gross - hcp;
+      if(net < bestNet){ bestNet = net; winnerId = uid_; }
+    });
+
+    const winnerName = winnerId ? (players[winnerId]?.name || 'Winnaar') : 'Winnaar';
+    royalConfetti(12000); bigWinnerOverlay(winnerName);
+  }
+
+  /* GOLF COURSE UI */
+  function buildHolesTable(data){
+    const tbody = document.querySelector('#holesTable tbody');
+    tbody.innerHTML = '';
+    for(let i=1;i<=18;i++){
+      const d = data?.[i] || {par:4,distance:300,name:''};
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>H${String(i).padStart(2,'0')}</td>
+        <td><input type="number" min="3" max="6" step="1" value="${d.par ?? 4}" data-hole="${i}" data-field="par"></td>
+        <td><input type="number" min="60" max="650" step="1" value="${d.distance ?? 300}" data-hole="${i}" data-field="distance"></td>
+        <td><input type="text" value="${d.name ?? ''}" placeholder="bijv. Dogleg Left" data-hole="${i}" data-field="name"></td>
+      `;
+      tbody.appendChild(tr);
+    }
+  }
+
+  // Wedstrijd meta
+  el('gcSaveMeta').onclick = async ()=>{
+    if(!gameId){ alert('Geen gameId.'); return; }
+    const payload = {
+      name: el('gcGameName').value.trim() || null,
+      holeRange: el('gcHoleRange').value || '1-18',
+      defaultTeeTime: el('gcTeeTime').value || null,
+      defaultFlight: el('gcFlight').value?.trim() || null,
+      course: { name: el('gcCourseName').value.trim() || null, city: el('gcCourseCity').value.trim() || null },
+      updatedAt: serverTimestamp()
+    };
+    await setDoc(doc(db,'games',gameId), payload, {merge:true});
+    alert('Wedstrijd & baan opgeslagen.');
+  };
+
+  el('gcShareLink').onclick = async ()=>{
+    if(!gameId){ alert('Geen gameId.'); return; }
+    const url = `${location.origin}${location.pathname}?game=${gameId}`;
+    const shareData = { title:'Golfwedstrijd', text:'Doe mee met onze wedstrijd. Klik op de link:', url };
+    try{
+      if(navigator.share){ await navigator.share(shareData); }
+      else { await navigator.clipboard.writeText(url); alert('Link gekopieerd:\n'+url); }
+    }catch(e){
+      try{ await navigator.clipboard.writeText(url); alert('Link gekopieerd:\n'+url); }
+      catch{ prompt('Kopieer de link handmatig:', url); }
+    }
+  };
+
+  el('gcFillPar4').onclick = ()=>{ buildHolesTable(blankHoles()); };
+
+  el('gcSaveHoles').onclick = async ()=>{
+    if(!gameId){ alert('Geen gameId.'); return; }
+    const inputs = Array.from(document.querySelectorAll('#holesTable [data-hole]'));
+    const holes = {};
+    for(const input of inputs){
+      const h = Number(input.dataset.hole);
+      holes[h] = holes[h] || {par:4,distance:300,name:''};
+      const field = input.dataset.field;
+      let val = input.value;
+      if(field!=='name'){ val = Number(val||0); }
+      holes[h][field] = val;
+    }
+    await setDoc(doc(db,'games',gameId), {holes}, {merge:true});
+    alert('Holes opgeslagen.');
+  };
+
+  // Speler toevoegen/bewerken
+  el('addPlayerBtn').onclick = async ()=>{
+    if(!gameId){ alert('Geen gameId.'); return; }
+    const name = el('plName').value.trim();
+    const handicap = Number(el('plHcp').value||0);
+    const flight = (el('plFlight').value||'').trim() || (el('gcFlight').value||'').trim() || null;
+    const teeTime = el('plTee').value || el('gcTeeTime').value || null;
+    if(!name){ alert('Naam is verplicht.'); return; }
+
+    const editingId = el('addPlayerBtn').dataset.editing;
+    if(editingId){
+      await setDoc(doc(db,'games',gameId,'players', editingId), { name, handicap, flight, teeTime, updatedAt: serverTimestamp() }, {merge:true});
+      el('addPlayerBtn').textContent = 'Speler toevoegen'; delete el('addPlayerBtn').dataset.editing;
+    }else{
+      await addDoc(collection(db,'games',gameId,'players'), { name, handicap, flight, teeTime, createdAt: serverTimestamp() });
+    }
+    el('plName').value=''; el('plHcp').value=0; el('plFlight').value=''; el('plTee').value='';
+  };
+
+  /* INIT */
+  holesData = blankHoles();
+  updateHeader(); updateScoreUI();
+  buildHolesTable(holesData);
+
+  // Inline speler updates (naam/hcp/flight/tee)
+  el('playerNameInline').addEventListener('change', async ()=>{
+    if(!gameId||!uid) return; const name = el('playerNameInline').value.trim();
+    await setDoc(doc(db,'games',gameId,'players',uid), {name}, {merge:true});
+  });
+  el('playerHcpInline').addEventListener('change', async ()=>{
+    if(!gameId||!uid) return; const handicap = Number(el('playerHcpInline').value||0);
+    await setDoc(doc(db,'games',gameId,'players',uid), {handicap}, {merge:true});
+  });
+  el('playerFlightInline').addEventListener('change', async ()=>{
+    if(!gameId||!uid) return; const flight = el('playerFlightInline').value.trim();
+    await setDoc(doc(db,'games',gameId,'players',uid), {flight}, {merge:true});
+  });
+  el('playerTeeInline').addEventListener('change', async ()=>{
+    if(!gameId||!uid) return; const teeTime = el('playerTeeInline').value || null;
+    await setDoc(doc(db,'games',gameId,'players',uid), {teeTime}, {merge:true});
+  });
+
+  // Leaderboard acties
+  document.getElementById('endRoundBtn').onclick = celebrateWinner;
+  document.getElementById('refreshLbBtn').onclick = recomputeLeaderboard;
+
+  /* ======= Sticker event feed (naar iedereen) ======= */
+  function toast(msg){
+    const wrap = el('toasts');
+    const t = document.createElement('div'); t.className='toast';
+    t.innerHTML = `<div class="title">${msg.title||''}</div><div class="muted">${msg.body||''}</div>`;
+    wrap.appendChild(t);
+    setTimeout(()=>{ t.style.transition='opacity .3s'; t.style.opacity='0'; setTimeout(()=>t.remove(),300); }, 4500);
+  }
+  function listenStickerEvents(id){
+    const qEv = query(collection(db,'games',id,'events'), orderBy('at','desc'));
+    onSnapshot(qEv, (snap)=>{
+      snap.docChanges().forEach(ch=>{
+        if(ch.type!=='added') return;
+        if(shownEventIds.has(ch.doc.id)) return;
+        shownEventIds.add(ch.doc.id);
+        const e = ch.doc.data();
+        if(e.type==='sticker'){
+          const label = (e.sticker||'').replace(/-/g,' ');
+          toast({ title:`${e.playerName||'Speler'} heeft ${label}!`, body:`Hole H${String(e.hole||'?').padStart(2,'0')}` });
+        }
+      });
+    });
+  }
+  </script>
+</body>
+</html>
