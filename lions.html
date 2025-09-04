@@ -503,16 +503,17 @@
         const p=d.data();
         const line = document.createElement('div');
         line.className='item';
-        line.innerHTML = `
-          <div>
-            <div style="font-weight:800">${p.name || '—'} <span class="tag sm">HCP ${p.handicap ?? 0}</span></div>
-            <div class="muted sm">Flight: ${p.flight || '-'} • Tee: ${p.teeTime || '-'}</div>
-          </div>
-          <div class="inline">
-            <button class="btn alt sm" style="min-height:auto" data-edit="${d.id}">Edit</button>
-            <button class="btn sm" style="min-height:auto;background:#7a2030" data-del="${d.id}">Verwijder</button>
-          </div>
-        `;
+       line.innerHTML = `
+  <div>
+    <div style="font-weight:800">${p.name || '—'} <span class="tag sm">HCP ${p.handicap ?? 0}</span></div>
+    <div class="muted sm">Flight: ${p.flight || '-'} • Tee: ${p.teeTime || '-'}</div>
+  </div>
+  <div class="inline">
+    <button class="btn sm" style="min-height:auto" data-score="${d.id}">ScoreCard</button>
+    <button class="btn alt sm" style="min-height:auto" data-edit="${d.id}">Edit</button>
+    <button class="btn sm" style="min-height:auto;background:#7a2030" data-del="${d.id}">Verwijder</button>
+  </div>
+`;
         wrap.appendChild(line);
       });
 
@@ -531,7 +532,26 @@
           el('addPlayerBtn').textContent = 'Opslaan wijzigingen';
           el('addPlayerBtn').dataset.editing = b.dataset.edit;
         };
-      });
+wrap.querySelectorAll('[data-score]').forEach(b=>{
+  b.onclick = async ()=>{
+    const playerId = b.dataset.score;
+    const ref = doc(db,'games',gameId,'players', playerId);
+    const snap = await getDoc(ref);
+    const playerName = snap.exists() ? (snap.data().name || '—') : '—';
+
+    scoreOwnerUid = playerId;
+    listenScoresFor(scoreOwnerUid);
+    setForeignBanner(playerName, true);
+
+    // Ga meteen naar SCORE CARD-tab
+    document.querySelector('.tabbtn.active')?.classList.remove('active');
+    document.querySelector('.tabbtn[data-tab="score"]').classList.add('active');
+    Object.values(views).forEach(v=>v.classList.remove('active'));
+    views['score'].classList.add('active');
+  };
+});
+
+      
     });
   }
 
