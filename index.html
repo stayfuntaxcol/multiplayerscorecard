@@ -13,7 +13,7 @@
   }
   *{box-sizing:border-box}
   body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial;background:var(--bg);color:var(--ink)}
-  .app{max-width:1100px;margin:0 auto;padding:12px;padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+  .app{max-width:1100px;margin:0 auto;padding:12px 12px calc(88px + env(safe-area-inset-bottom))}
   .header{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   .badge{background:#e6f5fb;color:#0b2430;border-radius:.8rem;padding:.55rem .7rem;font-weight:800}
   .badge.dim{background:#cfeef9}
@@ -26,31 +26,64 @@
   .pill{background:#0c2f3a;border:1px solid var(--line);border-radius:8px;padding:10px;color:var(--ink);width:100%}
   .pill.biginput{font-size:1.2rem;font-weight:900}
   .muted{color:var(--muted);font-size:.9rem}
-  .btn{display:inline-flex;align-items:center;justify-content:center;background:var(--btn);border:2px solid var(--line);border-radius:12px;min-height:var(--touch);font-size:1.1rem;font-weight:800;color:var(--ink);padding:.6rem .8rem;cursor:pointer;user-select:none}
+  .btn{display:inline-flex;align-items:center;justify-content:center;background:var(--btn);border:2px solid var(--line);border-radius:12px;min-height:var(--touch);font-size:1.05rem;font-weight:800;color:var(--ink);padding:.6rem .9rem;cursor:pointer;user-select:none;transition:.2s transform}
+  .btn:active{transform:translateY(1px)}
   .btn.alt{background:var(--btn2)}
+  .btn.ghost{background:transparent;border-color:#0a2b39}
   .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
   .grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
   .sticker{position:relative;display:flex;align-items:center;justify-content:center;height:140px;background:#103947;border-radius:12px;overflow:hidden}
   .sticker img{max-height:130px;max-width:100%}
   .loggrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
   .loggrid .cell{background:#0c2f3a;border:1px solid var(--line);border-radius:8px;padding:8px;text-align:center;font-weight:900}
-  .tabs.bottom{position:sticky;bottom:0;z-index:40;display:flex;gap:8px;background:linear-gradient(180deg,transparent,rgba(10,30,38,.9) 40%);padding:8px;margin:12px -12px -12px -12px}
   #confetti{position:fixed;inset:0;pointer-events:none}
   .small{display:block;font-size:.9rem;font-weight:700;opacity:.95;margin-top:6px}
   .scoreGrid{display:grid;grid-template-columns:1fr 1.2fr;gap:10px}
   .view{display:none}.view.active{display:block}
   @media (max-width:900px){ .scoreGrid{grid-template-columns:1fr} }
 
-  /* --- GOLF COURSE view helpers --- */
+  /* --- Tables & Lists --- */
   .table{width:100%;border-collapse:collapse}
   .table th,.table td{border:1px solid var(--line);padding:6px;text-align:center}
   .table th{background:#0c2f3a}
-  .table input{width:100%;background:#0b2f3a;border:1px solid #0a2732;color:var(--ink);border-radius:6px;padding:6px}
+  .table input, .table select{width:100%;background:#0b2f3a;border:1px solid #0a2732;color:var(--ink);border-radius:6px;padding:6px}
   .inline{display:flex;gap:8px;flex-wrap:wrap}
   .tag{background:#0c2f3a;border:1px solid var(--line);padding:.35rem .55rem;border-radius:.7rem;font-weight:800}
   .list{display:grid;grid-template-columns:1fr;gap:8px}
   .item{display:flex;align-items:center;justify-content:space-between;background:#0c2f3a;border:1px solid var(--line);border-radius:10px;padding:8px 10px}
   .sm{font-size:.9rem}
+
+  /* --- Pretty bottom tabs --- */
+  .tabs.bottom{
+    position:fixed;left:0;right:0;bottom:0;z-index:50;
+    padding:10px 14px calc(10px + env(safe-area-inset-bottom));
+    background:linear-gradient(180deg, rgba(6,22,29,0) 0%, rgba(6,22,29,.55) 30%, rgba(6,22,29,.9) 100%);
+    display:flex;justify-content:center;
+  }
+  .tabs-inner{
+    display:flex;gap:8px;align-items:center;justify-content:space-between;
+    background:rgba(19,55,69,.75);
+    border:1px solid #0a2b39;
+    border-radius:18px;
+    padding:6px;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 10px 24px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.05);
+  }
+  .tabbtn{
+    appearance:none;border:0;outline:0;cursor:pointer;
+    color:#cfeef9;background:transparent;
+    padding:10px 14px;border-radius:12px;font-weight:900;
+    display:flex;align-items:center;gap:8px;
+    min-width:120px;justify-content:center;
+    transition: background .2s, transform .15s;
+  }
+  .tabbtn svg{opacity:.9}
+  .tabbtn:active{transform:translateY(1px)}
+  .tabbtn.active{
+    background:linear-gradient(180deg,#1a5e74 0%, #154a5a 100%);
+    color:#fff; box-shadow: inset 0 1px 0 rgba(255,255,255,.07), 0 0 0 1px #0a2b39;
+  }
+  .tablabel{letter-spacing:.4px}
   </style>
 </head>
 <body>
@@ -63,7 +96,7 @@
 
     <div class="layout">
       <div class="card">
-        <!-- ===== SCORE VIEW ===== -->
+        <!-- ===== SCORE ===== -->
         <div id="view-score" class="view active">
           <div class="row" style="margin-bottom:8px">
             <div>
@@ -107,14 +140,12 @@
                 <button class="btn" data-club="W">W</button>
                 <button class="btn" data-club="P">P</button>
               </div>
-              <!-- rij 1 -->
               <div class="grid4">
                 <button class="btn alt" data-special="ball"   aria-label="nieuwe bal">⚪</button>
                 <button class="btn alt" data-special="bunker" aria-label="bunker">🏜️</button>
                 <button class="btn alt" data-special="water"  aria-label="water">💧</button>
                 <button class="btn alt" data-special="mulligan" aria-label="mulligan">🎁</button>
               </div>
-              <!-- rij 2 -->
               <div class="grid4" style="margin-top:8px">
                 <button class="btn alt" data-special="oob" aria-label="out of bounds">🌲</button>
                 <button class="btn alt" data-special="star" aria-label="highlight shot">⭐</button>
@@ -195,9 +226,9 @@
                 <div class="muted">Plaats</div>
                 <input id="gcCourseCity" class="pill" placeholder="Plaats">
               </div>
-              <button id="gcSaveMeta" class="btn">Opslaan wedstrijd + baan</button>
+              <button id="gcSaveMeta" class="btn">Opslaan</button>
+              <button id="gcShareLink" class="btn alt">Deel link met spelers</button>
             </div>
-            <div class="muted sm" style="margin-top:6px">Wordt opgeslagen in <span class="tag">games/{gameId}</span>.</div>
           </div>
 
           <!-- Holes editor -->
@@ -226,8 +257,6 @@
               <input id="plTee" class="pill" type="time" style="width:150px" placeholder="TeeTime">
               <button id="addPlayerBtn" class="btn">Speler toevoegen</button>
             </div>
-            <div class="muted sm" style="margin-top:6px">Toegevoegd aan <span class="tag">games/{gameId}/players</span>. Je eigen inline naam/hcp wordt gesynct met je eigen spelerskaart.</div>
-
             <div id="playersList" class="list" style="margin-top:10px"></div>
           </div>
         </div>
@@ -238,25 +267,40 @@
           <div id="leaderFull" class="card"></div>
           <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
             <button id="endRoundBtn" class="btn">Einde ronde • Vier winnaar</button>
+            <button id="refreshLbBtn" class="btn ghost">Vernieuw</button>
           </div>
         </div>
       </div>
-
-      <!-- bottom tabs -->
-      <div class="tabs bottom" role="navigation" aria-label="Tabs">
-        <button class="tabbtn active" data-tab="score">SCORE</button>
-        <button class="tabbtn" data-tab="leader">LEADERBOARD</button>
-        <button class="tabbtn" data-tab="settings">GOLF COURSE</button>
-      </div>
     </div>
   </div>
+
+  <!-- Pretty bottom tabs -->
+  <nav class="tabs bottom" role="navigation" aria-label="Tabs">
+    <div class="tabs-inner">
+      <button class="tabbtn active" data-tab="score" title="Score">
+        <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5 3h14v4H5zM5 9h14v12H5zM8 12h8v2H8zm0 4h6v2H8z"/></svg>
+        <span class="tablabel">SCORE</span>
+      </button>
+      <button class="tabbtn" data-tab="leader" title="Leaderboard">
+        <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 10h4v10H4zM10 4h4v16h-4zM16 7h4v13h-4z"/></svg>
+        <span class="tablabel">LEADERBOARD</span>
+      </button>
+      <button class="tabbtn" data-tab="settings" title="Golf Course">
+        <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 8a4 4 0 110 8 4 4 0 010-8m7.94 3a8 8 0 00-.34-1l2.05-1.59-2-3.46-2.41.8a8 8 0 00-1.73-1L15 1h-6l-.51 2.76a8 8 0 00-1.73 1l-2.41-.8-2 3.46L3.4 10a8 8 0 000 4l-2.05 1.59 2 3.46 2.41-.8c.54.41 1.12.76 1.73 1L9 23h6l.51-2.76c.61-.24 1.19-.59 1.73-1l2.41.8 2-3.46L19.6 14c.15-.64.26-1.31.34-2z"/></svg>
+        <span class="tablabel">GOLF COURSE</span>
+      </button>
+    </div>
+  </nav>
 
   <canvas id="confetti"></canvas>
 
   <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
   import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
-  import { getFirestore, doc, setDoc, getDoc, onSnapshot, serverTimestamp, collection, addDoc, getDocs, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+  import {
+    getFirestore, doc, setDoc, getDoc, onSnapshot, serverTimestamp,
+    collection, addDoc, getDocs, deleteDoc, query
+  } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
   /* Firebase config (jouw project) */
   const firebaseConfig = {
@@ -293,49 +337,34 @@
   let currentHole = 1;
   let holeRange = '1-18';
   let holesData = {}; // {1:{par,distance,name},...}
-  let me = null;      // {name,handicap,holes:{}}
+  let me = null;
   let unsubPlayers = null;
 
   const el = id => document.getElementById(id);
   const rangeBounds = ()=> holeRange==='1-9' ? [1,9] : holeRange==='10-18' ? [10,18] : [1,18];
 
-  /* ===== AUTH ===== */
-  onAuthStateChanged(auth, async (user)=>{
-    if(!user){ await signInAnonymously(auth); return; }
-    uid=user.uid;
-    if(gameId) subscribeGame(gameId);
-  });
-
   /* ===== HELPERS ===== */
   function blankHoles(){ const o={}; for(let i=1;i<=18;i++) o[i]={par:4,distance:300,name:''}; return o; }
   function mmss(sec){ const m=Math.floor(sec/60); const s=String(sec%60).padStart(2,'0'); return `${m}:${s}`; }
-
   function defaultHole(){
     return { strokes:[], putts:0, penalties:{ball:0,water:0,bunker:0,oob:0}, total:0, sticker:null,
              startTs:null, endTs:null, duration:0, mulliganUsed:false, resigned:false };
   }
-
   function strokeState(){
     const all=(me&&me.holes)||{}; const key=String(currentHole);
     return JSON.parse(JSON.stringify(all[key] || defaultHole()));
   }
-
   async function persistHole(hstate){
     if(!gameId||!uid) return;
     me = me || {}; me.holes = me.holes || {};
     me.holes[String(currentHole)] = hstate;
     await setDoc(doc(db,'games',gameId,'scores',uid), {holes:me.holes},{merge:true});
   }
-
   function updateTimeUI(h){
-    const tEl = document.getElementById('timeUnder');
-    if(!tEl) return;
-    let sec=0;
-    if(h.endTs){ sec = h.duration||0; }
-    else if(h.startTs){ sec = Math.floor((Date.now()-h.startTs)/1000); }
+    const tEl = document.getElementById('timeUnder'); if(!tEl) return;
+    let sec=0; if(h.endTs){ sec=h.duration||0; } else if(h.startTs){ sec=Math.floor((Date.now()-h.startTs)/1000); }
     tEl.textContent = mmss(sec);
   }
-
   function updateScoreUI(){
     const h = strokeState();
     el('puts').textContent      = h.putts||0;
@@ -345,10 +374,7 @@
 
     const log = el('strokeLog');
     const BLUE_FLAG_SVG = '<svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M5 3v18" stroke="#8fb3ff" stroke-width="2"/><path d="M6 4h11l-3 3 3 3H6z" fill="#3b82f6"/></svg>';
-    log.innerHTML = (h.strokes||[])
-      .slice(-16)
-      .map(s=> s==='⛳' ? `<div class="cell">${BLUE_FLAG_SVG}</div>` : `<div class="cell">${s}</div>`)
-      .join('');
+    log.innerHTML = (h.strokes||[]).slice(-16).map(s=> s==='⛳' ? `<div class="cell">${BLUE_FLAG_SVG}</div>` : `<div class="cell">${s}</div>`).join('');
 
     const par = holesData[currentHole]?.par ?? 0;
     el('holeTotal').textContent = h.total||0;
@@ -356,14 +382,11 @@
     el('deltaTxt').textContent  = `t.o.v. Par: ${(h.total||0)-par}`;
     const sa = document.getElementById('strokeAbove'); if(sa) sa.textContent=h.total||0;
 
-    // tijd
     updateTimeUI(h);
 
-    // sticker zichtbaar houden
     const img = document.getElementById('stickerImg');
     if(h.sticker){ img.src = stickerImg(h.sticker)||''; img.style.display='block'; } else { img.src=''; img.style.display='none'; }
   }
-
   function updateHeader(){
     const d=holesData[currentHole]||{par:'?',distance:'000'};
     el('holeHeader').textContent = `H${String(currentHole).padStart(2,'0')} • Par ${d.par} • ${d.distance}m`;
@@ -373,16 +396,42 @@
     el('holeDist').textContent = d.distance;
   }
 
+  /* ===== AUTH & GAME SETUP ===== */
+  onAuthStateChanged(auth, async (user)=>{
+    if(!user){ await signInAnonymously(auth); return; }
+    uid=user.uid;
+
+    if(!gameId){
+      gameId = await createNewGame(uid);
+    }
+    if(gameId) subscribeGame(gameId);
+  });
+
+  async function createNewGame(hostUid){
+    const payload = {
+      name: 'Nieuwe Wedstrijd',
+      holeRange: '1-18',
+      defaultTeeTime: null,
+      defaultFlight: null,
+      course: { name:null, city:null },
+      holes: blankHoles(),
+      hostUid: hostUid || null,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    };
+    const ref = await addDoc(collection(db,'games'), payload);
+    history.replaceState({}, '', `${location.pathname}?game=${ref.id}`);
+    return ref.id;
+  }
+
   /* ===== SUBSCRIPTIONS ===== */
   async function subscribeGame(id){
-    // game meta
     onSnapshot(doc(db,'games',id),(snap)=>{
       if(!snap.exists()) return;
       const g=snap.data();
       holeRange = g.holeRange || '1-18';
       holesData = g.holes || blankHoles();
 
-      // header badge
       const nameBadge = g.name || 'Golf Course';
       const flightBadge = g.defaultFlight ? ` • Flight ${g.defaultFlight}` : (g.flight ? ` • Flight ${g.flight}` : '');
       el('gameTitle').textContent = `${nameBadge}${flightBadge}`;
@@ -399,16 +448,15 @@
       el('gcCourseCity').value = g.course?.city || '';
 
       buildHolesTable(holesData);
+      recomputeLeaderboard();
     });
 
-    // scores (mijn doc)
     onSnapshot(doc(db,'games',id,'scores',uid),(snap)=>{
       if(!snap.exists()) return;
       me = me || {}; me.holes = snap.data().holes||{};
       updateScoreUI();
     });
 
-    // spelersnaam/hcp inline sync
     onSnapshot(doc(db,'games',id,'players',uid),(snap)=>{
       if(snap.exists()){
         const p=snap.data();
@@ -417,17 +465,16 @@
       }
     });
 
-    // spelerslijst
     listenPlayers();
+    startLeaderboardListeners(id);
   }
 
   function listenPlayers(){
     if(!gameId) return;
-    if(unsubPlayers) unsubPlayers(); // cleanup
+    if(unsubPlayers) unsubPlayers();
     const qPlayers = query(collection(db,'games',gameId,'players'));
     unsubPlayers = onSnapshot(qPlayers, (snap)=>{
-      const wrap = el('playersList');
-      wrap.innerHTML = '';
+      const wrap = el('playersList'); wrap.innerHTML = '';
       snap.forEach(d=>{
         const p=d.data();
         const line = document.createElement('div');
@@ -445,11 +492,8 @@
         wrap.appendChild(line);
       });
 
-      // bind delete/edit
       wrap.querySelectorAll('[data-del]').forEach(b=>{
-        b.onclick = async ()=>{
-          await deleteDoc(doc(db,'games',gameId,'players', b.dataset.del));
-        };
+        b.onclick = async ()=>{ await deleteDoc(doc(db,'games',gameId,'players', b.dataset.del)); };
       });
       wrap.querySelectorAll('[data-edit]').forEach(b=>{
         b.onclick = async ()=>{
@@ -467,7 +511,7 @@
     });
   }
 
-  /* ===== STICKERS ===== */
+  /* ===== STICKERS / EFFECTS ===== */
   function stickerFor(total,par,extra){
     const d=total-par;
     if(total===8) return 'snowman';
@@ -521,137 +565,71 @@
     setTimeout(()=>overlay.remove(), 4000);
   }
 
-  // 30s Royal confetti met emoji + slingers
   function royalConfetti(durationMs=30000){
-    const c = document.getElementById('confetti');
-    const ctx = c.getContext('2d');
+    const c = document.getElementById('confetti'); const ctx = c.getContext('2d');
     let W = c.width = innerWidth, H = c.height = innerHeight;
-
-    const EMOJI = ['👑','⭐','🎉','🎊'];
-    const pieces = [];
-
+    const EMOJI = ['👑','⭐','🎉','🎊']; const pieces = [];
     for(let i=0;i<220;i++){
-      pieces.push({
-        type:'emoji',
-        char: EMOJI[Math.floor(Math.random()*EMOJI.length)],
-        x: Math.random()*W,
-        y: -20 - Math.random()*H,
-        vy: 1.5 + Math.random()*2.5,
-        vx: (Math.random()-.5)*1.2,
-        rot: Math.random()*Math.PI*2,
-        rSpeed: (Math.random()-.5)*0.04,
-        size: 18 + Math.random()*16
-      });
+      pieces.push({type:'emoji',char:EMOJI[Math.floor(Math.random()*EMOJI.length)],x:Math.random()*W,y:-20-Math.random()*H,vy:1.5+Math.random()*2.5,vx:(Math.random()-.5)*1.2,rot:Math.random()*Math.PI*2,rSpeed:(Math.random()-.5)*0.04,size:18+Math.random()*16});
     }
     for(let i=0;i<60;i++){
-      pieces.push({
-        type:'streamer',
-        x: Math.random()*W,
-        y: -40 - Math.random()*H,
-        vy: 1.2 + Math.random()*1.8,
-        vx: (Math.random()-.5)*0.6,
-        w: 6+Math.random()*10,
-        h: 60+Math.random()*120,
-        hue: Math.floor(Math.random()*360),
-        alpha: .8
-      });
+      pieces.push({type:'streamer',x:Math.random()*W,y:-40-Math.random()*H,vy:1.2+Math.random()*1.8,vx:(Math.random()-.5)*0.6,w:6+Math.random()*10,h:60+Math.random()*120,hue:Math.floor(Math.random()*360),alpha:.8});
     }
-
     const end = performance.now()+durationMs;
     function step(){
       ctx.clearRect(0,0,W,H);
       for(const p of pieces){
-        p.x += p.vx; p.y += p.vy;
-
+        p.x+=p.vx; p.y+=p.vy;
         if(p.type==='emoji'){
-          p.rot += p.rSpeed;
-          ctx.save();
-          ctx.translate(p.x, p.y);
-          ctx.rotate(p.rot);
-          ctx.font = `${p.size}px system-ui, Apple Color Emoji, Segoe UI Emoji`;
-          ctx.textAlign='center'; ctx.textBaseline='middle';
-          ctx.fillText(p.char, 0, 0);
-          ctx.restore();
+          p.rot+=p.rSpeed; ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot);
+          ctx.font=`${p.size}px system-ui, Apple Color Emoji, Segoe UI Emoji`; ctx.textAlign='center'; ctx.textBaseline='middle';
+          ctx.fillText(p.char,0,0); ctx.restore();
         }else{
-          ctx.save();
-          ctx.globalAlpha = p.alpha;
-          ctx.fillStyle = `hsl(${p.hue}, 85%, 60%)`;
-          ctx.translate(p.x, p.y);
-          ctx.rotate((p.x+p.y)/200);
-          ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
-          ctx.restore();
+          ctx.save(); ctx.globalAlpha=p.alpha; ctx.fillStyle=`hsl(${p.hue},85%,60%)`; ctx.translate(p.x,p.y); ctx.rotate((p.x+p.y)/200); ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h); ctx.restore();
         }
-
-        if(p.y > H + 50){ p.y = -50; p.x = Math.random()*W; }
+        if(p.y>H+50){ p.y=-50; p.x=Math.random()*W; }
       }
       if(performance.now()<end){ requestAnimationFrame(step); } else { ctx.clearRect(0,0,W,H); }
     }
     step();
     addEventListener('resize', ()=>{ W=c.width=innerWidth; H=c.height=innerHeight; }, {once:true});
   }
-
   function bigWinnerOverlay(name){
     const overlay = document.createElement('div');
-    overlay.style.position='fixed';
-    overlay.style.inset='0';
-    overlay.style.background='rgba(0,0,0,.55)';
-    overlay.style.backdropFilter='blur(2px)';
-    overlay.style.display='flex';
-    overlay.style.flexDirection='column';
-    overlay.style.alignItems='center';
-    overlay.style.justifyContent='center';
-    overlay.style.gap='12px';
-    overlay.style.zIndex=10050;
-
+    overlay.style.position='fixed'; overlay.style.inset='0'; overlay.style.background='rgba(0,0,0,.55)'; overlay.style.backdropFilter='blur(2px)';
+    overlay.style.display='flex'; overlay.style.flexDirection='column'; overlay.style.alignItems='center'; overlay.style.justifyContent='center';
+    overlay.style.gap='12px'; overlay.style.zIndex=10050;
     const box = document.createElement('div');
-    box.style.background='rgba(8,26,32,.97)';
-    box.style.border='3px solid #0a2732';
-    box.style.borderRadius='18px';
-    box.style.padding='18px 22px';
-    box.style.textAlign='center';
-    box.style.maxWidth='90vw';
-
+    box.style.background='rgba(8,26,32,.97)'; box.style.border='3px solid #0a2732'; box.style.borderRadius='18px'; box.style.padding='18px 22px'; box.style.textAlign='center'; box.style.maxWidth='90vw';
     box.innerHTML = `
       <div style="font-size:54px;line-height:1.1">👑⭐🎉🎊</div>
       <div style="font-size:26px;font-weight:900;margin-top:6px">Gefeliciteerd ${name}!</div>
       <div class="muted" style="font-size:18px;margin-top:4px">Je bent de koning van deze ronde!</div>
       <div style="font-size:18px;margin-top:8px">Je hebt wel een heerlijk koud biertje verdiend!</div>
-      <div style="font-size:44px;margin-top:8px">🍻</div>
-    `;
-    overlay.appendChild(box);
-    document.body.appendChild(overlay);
+      <div style="font-size:44px;margin-top:8px">🍻</div>`;
+    overlay.appendChild(box); document.body.appendChild(overlay);
     setTimeout(()=> overlay.remove(), 8000);
   }
 
-  /* ===== SCORE INTERACTIES ===== */
+  /* ===== SCORE INTERACTIE ===== */
   function addStroke(kind){
     const s = strokeState();
     const countable=['D','W','P','3','4','5','6','7','8','9'];
-
     if(kind==='P'){ s.putts=(s.putts||0)+1; }
-
-    if(countable.includes(kind)){
-      if(!s.startTs) s.startTs = Date.now();
-      s.strokes.push(kind); s.total=(s.total||0)+1;
-    }
-
-    if(kind==='ball'){  s.penalties.ball=(s.penalties.ball||0)+1;  s.strokes.push('⚪'); s.total=(s.total||0)+1; if(!s.startTs) s.startTs=Date.now(); }
+    if(countable.includes(kind)){ if(!s.startTs) s.startTs=Date.now(); s.strokes.push(kind); s.total=(s.total||0)+1; }
+    if(kind==='ball'){  s.penalties.ball=(s.penalties.ball||0)+1; s.strokes.push('⚪'); s.total=(s.total||0)+1; if(!s.startTs) s.startTs=Date.now(); }
     if(kind==='water'){ s.penalties.water=(s.penalties.water||0)+1; s.strokes.push('💧'); s.total=(s.total||0)+1; if(!s.startTs) s.startTs=Date.now(); }
     if(kind==='bunker'){ s.penalties.bunker=(s.penalties.bunker||0)+1; s.strokes.push('🏜️'); }
-
     if(kind==='oob'){ s.penalties.oob=(s.penalties.oob||0)+1; s.strokes.push('🌲'); s.total=(s.total||0)+1; if(!s.startTs) s.startTs=Date.now(); }
     if(kind==='star'){ s.strokes.push('⭐'); }
     if(kind==='resign'){ s.resigned=true; s.strokes.push('🔴'); }
-
     if(kind==='mulligan'){
       if(s.mulliganUsed){ alert('Mulligan al gebruikt op deze hole.'); return; }
       const reversible=['D','W','P','3','4','5','6','7','8','9','⚪','💧'];
       if(s.strokes.length){
         const last = s.strokes[s.strokes.length-1];
-        if(reversible.includes(last)){
-          s.strokes.pop();
-          s.total = Math.max(0,(s.total||0)-1);
-        }else{
+        if(reversible.includes(last)){ s.strokes.pop(); s.total=Math.max(0,(s.total||0)-1); }
+        else{
           for(let i=s.strokes.length-1;i>=0;i--){
             if(reversible.includes(s.strokes[i])){ s.strokes.splice(i,1); s.total=Math.max(0,(s.total||0)-1); break; }
           }
@@ -659,10 +637,8 @@
       }
       s.mulliganUsed=true; s.strokes.push('🎁');
     }
-
     me = me || {}; me.holes = me.holes || {}; me.holes[String(currentHole)] = s;
-    updateScoreUI();
-    persistHole(s);
+    updateScoreUI(); persistHole(s);
   }
 
   document.querySelectorAll('[data-club]').forEach(b=>b.onclick=()=>addStroke(b.dataset.club));
@@ -698,32 +674,94 @@
   document.getElementById('prevHole').onclick = ()=>{ const[sH,eH]=rangeBounds(); currentHole = currentHole>sH ? currentHole-1 : eH; updateHeader(); updateScoreUI(); };
   document.getElementById('nextHole').onclick = ()=>{ const[sH,eH]=rangeBounds(); currentHole = currentHole<eH ? currentHole+1 : sH; updateHeader(); updateScoreUI(); };
 
-  /* ===== LEADERBOARD / WINNER ===== */
-  function grossForRange(holesObj, start, end){
-    let gross = 0;
-    for(let h=start; h<=end; h++){ gross += holesObj?.[String(h)]?.total || 0; }
-    return gross;
+  /* ===== LEADERBOARD ===== */
+  const LB = { players:{}, scores:{}, holesMeta:()=>holesData, range:()=>holeRange };
+  const medal = i => (i===0?'🥇':i===1?'🥈':i===2?'🥉':'');
+  const fmtTime = sec => { if(!sec||sec<=0) return '—'; const h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60), s=sec%60; return h?`${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`:`${m}:${String(s).padStart(2,'0')}`; };
+  const rangeBoundsFrom = rg => rg==='10-18'?[10,18]:rg==='1-9'?[1,9]:[1,18];
+  function parSumForRange(holes,start,end){ let sum=0; for(let h=start; h<=end; h++) sum += Number(holes?.[h]?.par||4); return sum; }
+  function grossForRange(holesObj,start,end){ let gross=0; for(let h=start; h<=end; h++) gross += Number(holesObj?.[String(h)]?.total||0); return gross; }
+  function durationForRange(holesObj,start,end){ let sum=0; for(let h=start; h<=end; h++) sum += Number(holesObj?.[String(h)]?.duration||0); return sum; }
+  function finishedCount(holesObj,start,end){ let n=0; for(let h=start; h<=end; h++) if(holesObj?.[String(h)]?.endTs) n++; return n; }
+  function countSticker(holesObj,start,end,key){ let n=0; for(let h=start; h<=end; h++) if(holesObj?.[String(h)]?.sticker===key) n++; return n; }
+
+  function recomputeLeaderboard(){
+    const cont = document.getElementById('leaderFull'); if(!cont) return;
+    const [start,end] = rangeBoundsFrom(LB.range());
+    const parSum = parSumForRange(LB.holesMeta(), start, end);
+
+    const rows = Object.entries(LB.scores).map(([uid_, sdoc])=>{
+      const holes = sdoc?.holes||{};
+      const p = LB.players[uid_] || {};
+      const gross = grossForRange(holes,start,end);
+      const hcp = Number(p.handicap||0);
+      const net = gross - hcp;
+      const toPar = gross - parSum;
+      const dur = durationForRange(holes,start,end);
+      const done = finishedCount(holes,start,end);
+      const birds = countSticker(holes,start,end,'birdie');
+      const eagles = countSticker(holes,start,end,'eagle');
+      return { uid:uid_, name:p.name||'—', flight:p.flight||'-', tee:p.teeTime||'-', hcp, gross, net, toPar, done, total:(end-start+1), dur, birds, eagles };
+    });
+
+    rows.sort((a,b)=> a.net-b.net || a.gross-b.gross || a.dur-b.dur || a.name.localeCompare(b.name));
+
+    cont.innerHTML = `
+      <table class="table" style="width:100%">
+        <thead>
+          <tr>
+            <th>#</th><th>Speler</th><th>Flight</th><th>Tee</th>
+            <th>Gross</th><th>HCP</th><th>Net</th><th>±Par</th>
+            <th>Holes</th><th>Tijd</th><th>🐦</th><th>🦅</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map((r,i)=>`
+            <tr>
+              <td>${medal(i) || (i+1)}</td>
+              <td style="text-align:left;font-weight:800">${r.name}</td>
+              <td>${r.flight}</td>
+              <td>${r.tee}</td>
+              <td>${r.gross||0}</td>
+              <td>${r.hcp||0}</td>
+              <td style="font-weight:900">${r.net||0}</td>
+              <td>${r.toPar>0?`+${r.toPar}`:r.toPar}</td>
+              <td>${r.done}/${r.total}</td>
+              <td>${fmtTime(r.dur)}</td>
+              <td>${r.birds||0}</td>
+              <td>${r.eagles||0}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+      <div class="muted sm" style="margin-top:6px">
+        Range: H${String(start).padStart(2,'0')}–H${String(end).padStart(2,'0')} • Par som: ${parSum}
+      </div>`;
+  }
+
+  function startLeaderboardListeners(id){
+    onSnapshot(collection(db,'games',id,'players'), snap=>{
+      LB.players = {}; snap.forEach(d=> LB.players[d.id]=d.data()); recomputeLeaderboard();
+    });
+    onSnapshot(collection(db,'games',id,'scores'), snap=>{
+      LB.scores = {}; snap.forEach(d=> LB.scores[d.id]=d.data()); recomputeLeaderboard();
+    });
   }
 
   async function celebrateWinner(){
     if(!gameId) return;
-
     const gSnap = await getDoc(doc(db,'games',gameId));
     const holeRangeVal = gSnap.exists() ? (gSnap.data().holeRange || '1-18') : '1-18';
     const [start,end] = holeRangeVal==='10-18' ? [10,18] : holeRangeVal==='1-9' ? [1,9] : [1,18];
 
     const playersSnap = await getDocs(collection(db,'games',gameId,'players'));
-    const players = {};
-    playersSnap.forEach(d=> players[d.id] = d.data());
+    const players = {}; playersSnap.forEach(d=> players[d.id] = d.data());
 
     const scoresSnap = await getDocs(collection(db,'games',gameId,'scores'));
 
-    let winnerId = null;
-    let bestNet = Infinity;
-
+    let winnerId = null, bestNet = Infinity;
     scoresSnap.forEach(sdoc=>{
-      const uid_ = sdoc.id;
-      const sdata = sdoc.data() || {};
+      const uid_ = sdoc.id, sdata = sdoc.data() || {};
       const gross = grossForRange(sdata.holes||{}, start, end);
       const hcp = players[uid_]?.handicap || 0;
       const net = gross - hcp;
@@ -731,17 +769,10 @@
     });
 
     const winnerName = winnerId ? (players[winnerId]?.name || 'Winnaar') : 'Winnaar';
-
-    royalConfetti(30000);
-    bigWinnerOverlay(winnerName);
+    royalConfetti(30000); bigWinnerOverlay(winnerName);
   }
 
-  const endBtn = document.getElementById('endRoundBtn');
-  if(endBtn){ endBtn.onclick = celebrateWinner; }
-
-  /* ===== GOLF COURSE: UI LOGICA ===== */
-
-  // Build holes table rows 1..18
+  /* ===== GOLF COURSE UI LOGICA ===== */
   function buildHolesTable(data){
     const tbody = document.querySelector('#holesTable tbody');
     tbody.innerHTML = '';
@@ -758,32 +789,37 @@
     }
   }
 
-  // Save meta (wedstrijd + course)
   el('gcSaveMeta').onclick = async ()=>{
-    if(!gameId){ alert('Geen gameId in de URL (?game=...)'); return; }
+    if(!gameId){ alert('Geen gameId.'); return; }
     const payload = {
       name: el('gcGameName').value.trim() || null,
       holeRange: el('gcHoleRange').value || '1-18',
       defaultTeeTime: el('gcTeeTime').value || null,
       defaultFlight: el('gcFlight').value?.trim() || null,
-      course: {
-        name: el('gcCourseName').value.trim() || null,
-        city: el('gcCourseCity').value.trim() || null
-      },
+      course: { name: el('gcCourseName').value.trim() || null, city: el('gcCourseCity').value.trim() || null },
       updatedAt: serverTimestamp()
     };
     await setDoc(doc(db,'games',gameId), payload, {merge:true});
-    alert('Wedstrijd en baan opgeslagen.');
+    alert('Wedstrijd & baan opgeslagen.');
   };
 
-  // Fill defaults Par4 / 300m
-  el('gcFillPar4').onclick = ()=>{
-    buildHolesTable(blankHoles());
+  el('gcShareLink').onclick = async ()=>{
+    if(!gameId){ alert('Geen gameId.'); return; }
+    const url = `${location.origin}${location.pathname}?game=${gameId}`;
+    const shareData = { title:'Golfwedstrijd', text:'Doe mee met onze wedstrijd. Klik op de link:', url };
+    try{
+      if(navigator.share){ await navigator.share(shareData); }
+      else { await navigator.clipboard.writeText(url); alert('Link gekopieerd:\n'+url); }
+    }catch(e){
+      try{ await navigator.clipboard.writeText(url); alert('Link gekopieerd:\n'+url); }
+      catch{ prompt('Kopieer de link handmatig:', url); }
+    }
   };
 
-  // Save holes
+  el('gcFillPar4').onclick = ()=>{ buildHolesTable(blankHoles()); };
+
   el('gcSaveHoles').onclick = async ()=>{
-    if(!gameId){ alert('Geen gameId in de URL (?game=...)'); return; }
+    if(!gameId){ alert('Geen gameId.'); return; }
     const inputs = Array.from(document.querySelectorAll('#holesTable [data-hole]'));
     const holes = {};
     for(const input of inputs){
@@ -798,30 +834,21 @@
     alert('Holes opgeslagen.');
   };
 
-  // Add / Edit player
   el('addPlayerBtn').onclick = async ()=>{
-    if(!gameId){ alert('Geen gameId in de URL (?game=...)'); return; }
+    if(!gameId){ alert('Geen gameId.'); return; }
     const name = el('plName').value.trim();
     const handicap = Number(el('plHcp').value||0);
     const flight = (el('plFlight').value||'').trim() || (el('gcFlight').value||'').trim() || null;
     const teeTime = el('plTee').value || el('gcTeeTime').value || null;
-
     if(!name){ alert('Naam is verplicht.'); return; }
 
     const editingId = el('addPlayerBtn').dataset.editing;
     if(editingId){
-      await setDoc(doc(db,'games',gameId,'players', editingId), {
-        name, handicap, flight, teeTime, updatedAt: serverTimestamp()
-      }, {merge:true});
-      el('addPlayerBtn').textContent = 'Speler toevoegen';
-      delete el('addPlayerBtn').dataset.editing;
+      await setDoc(doc(db,'games',gameId,'players', editingId), { name, handicap, flight, teeTime, updatedAt: serverTimestamp() }, {merge:true});
+      el('addPlayerBtn').textContent = 'Speler toevoegen'; delete el('addPlayerBtn').dataset.editing;
     }else{
-      // Als je je eigen player wil koppelen aan je uid, vul exact je inline naam/hcp in en wijzig daarna indien nodig
-      await addDoc(collection(db,'games',gameId,'players'), {
-        name, handicap, flight, teeTime, createdAt: serverTimestamp()
-      });
+      await addDoc(collection(db,'games',gameId,'players'), { name, handicap, flight, teeTime, createdAt: serverTimestamp() });
     }
-
     el('plName').value=''; el('plHcp').value=0; el('plFlight').value=''; el('plTee').value='';
   };
 
@@ -841,6 +868,10 @@
     const handicap = Number(document.getElementById('playerHcpInline').value||0);
     await setDoc(doc(db,'games',gameId,'players',uid), {handicap}, {merge:true});
   });
+
+  // Leaderboard controls
+  document.getElementById('endRoundBtn').onclick = celebrateWinner;
+  document.getElementById('refreshLbBtn').onclick = recomputeLeaderboard;
   </script>
 </body>
 </html>
