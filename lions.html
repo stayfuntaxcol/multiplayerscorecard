@@ -23,6 +23,7 @@
   .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .tile{background:var(--panel2);border-radius:10px;padding:12px;text-align:center;font-weight:800}
   .tile.huge{font-size:56px;line-height:1.05}
+  .tile.big{font-size:60px;line-height:1.05}
   .pill{background:#0c2f3a;border:1px solid var(--line);border-radius:8px;padding:10px;color:var(--ink);width:100%}
   .pill.biginput{font-size:1.1rem;font-weight:900}
   .muted{color:var(--muted);font-size:.9rem}
@@ -58,7 +59,7 @@
   .toast{background:rgba(16,57,71,.95);border:1px solid #0a2b39;border-radius:10px;padding:10px 12px;box-shadow:0 10px 24px rgba(0,0,0,.28)}
   .toast .title{font-weight:900}
 
-  /* Bottom tabs */
+  /* Pretty bottom tabs */
   .tabs.bottom{
     position:fixed;left:0;right:0;bottom:0;z-index:50;
     padding:10px 14px calc(10px + env(safe-area-inset-bottom));
@@ -103,14 +104,6 @@
       <div class="card">
         <!-- ===== SCORE CARD ===== -->
         <div id="view-score" class="view active">
-          <!-- foreign banner -->
-          <div id="foreignBanner" class="tile" style="display:none; margin-bottom:10px; text-align:left">
-            <div style="display:flex; align-items:center; justify-content:space-between; gap:8px">
-              <div><strong>Je bewerkt nu de kaart van:</strong> <span id="foreignName">—</span></div>
-              <button id="backToMe" class="btn alt sm" style="min-height:auto">Terug naar mijn kaart</button>
-            </div>
-          </div>
-
           <div class="row" style="margin-bottom:8px">
             <div>
               <div class="muted">Speler</div>
@@ -365,10 +358,6 @@
   let unsubPlayers = null;
   let shownEventIds = new Set();
 
-  // SCORE OWNER (voor bewerken andermans kaart)
-  let scoreOwnerUid = null;
-  let unsubScoreOwner = null;
-
   const el = id => document.getElementById(id);
   const rangeBounds = ()=> holeRange==='1-9' ? [1,9] : holeRange==='10-18' ? [10,18] : [1,18];
 
@@ -383,28 +372,16 @@
     const all=(me&&me.holes)||{}; const key=String(currentHole);
     return JSON.parse(JSON.stringify(all[key] || defaultHole()));
   }
-  function setForeignBanner(name, on){
-    const b = el('foreignBanner');
-    const n = el('foreignName');
-    if(on){ b.style.display='block'; n.textContent = name || '—'; }
-    else { b.style.display='none'; n.textContent = '—'; }
-  }
-  function setInlineDisabled(disabled){
-    ['playerNameInline','playerHcpInline','playerFlightInline','playerTeeInline']
-      .forEach(id=>{ const e=el(id); if(e){ e.disabled = !!disabled; e.style.opacity = disabled?.7:1; }});
-  }
-
   async function persistHole(hstate){
-    if(!gameId) return;
-    const owner = scoreOwnerUid || uid;
+    if(!gameId||!uid) return;
     me = me || {}; me.holes = me.holes || {};
     me.holes[String(currentHole)] = hstate;
-    await setDoc(doc(db,'games',gameId,'scores', owner), {holes:me.holes},{merge:true});
+    await setDoc(doc(db,'games',gameId,'scores',uid), {holes:me.holes},{merge:true});
   }
 
   /* Tijd alleen bovenin */
   function updateTimeUI(h){
-    const tTop = el('timeTop'); if(!tTop) return;
+    const tTop = document.getElementById('timeTop'); if(!tTop) return;
     let sec=0; if(h.endTs){ sec=h.duration||0; } else if(h.startTs){ sec=Math.floor((Date.now()-h.startTs)/1000); }
     tTop.textContent = mmss(sec);
   }
@@ -427,11 +404,11 @@
     el('holeTotal').textContent = h.total||0;
     el('overPar').textContent   = ((h.total||0)-par)>0?`+${(h.total||0)-par}`:`${(h.total||0)-par}`;
     el('deltaTxt').textContent  = `t.o.v. Par: ${(h.total||0)-par}`;
-    const sa = el('strokeAbove'); if(sa) sa.textContent=h.total||0;
+    const sa = document.getElementById('strokeAbove'); if(sa) sa.textContent=h.total||0;
 
     updateTimeUI(h);
 
-    const img = el('stickerImg');
+    const img = document.getElementById('stickerImg');
     if(h.sticker){ img.src = stickerImg(h.sticker)||''; img.style.display='block'; } else { img.src=''; img.style.display='none'; }
   }
 
@@ -453,27 +430,19 @@
 
   async function createNewGame(hostUid){
     const payload = {
-      name: 'Nieuwe Wedstrijd', holeRange: '1-18',
-      defaultTeeTime: null, defaultFlight: null,
+      name: 'Nieuwe Wedstrijd',
+      holeRange: '1-18',
+      defaultTeeTime: null,
+      defaultFlight: null,
       course: { name:null, city:null },
-      holes: blankHoles(), hostUid: hostUid || null,
-      createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+      holes: blankHoles(),
+      hostUid: hostUid || null,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
     };
     const ref = await addDoc(collection(db,'games'), payload);
     history.replaceState({}, '', `${location.pathname}?game=${ref.id}`);
     return ref.id;
-  }
-
-  /* Scores-listener voor huidige eigenaar */
-  function listenScoresFor(ownerUid){
-    if(unsubScoreOwner) { unsubScoreOwner(); unsubScoreOwner=null; }
-    if(!ownerUid) return;
-    const ref = doc(db,'games',gameId,'scores', ownerUid);
-    unsubScoreOwner = onSnapshot(ref, (snap)=>{
-      me = me || {};
-      me.holes = snap.exists() ? (snap.data().holes||{}) : {};
-      updateScoreUI();
-    });
   }
 
   /* Subscriptions */
@@ -502,7 +471,13 @@
       recomputeLeaderboard();
     });
 
-    // inline speler sync (eigen doc)
+    onSnapshot(doc(db,'games',id,'scores',uid),(snap)=>{
+      if(!snap.exists()) return;
+      me = me || {}; me.holes = snap.data().holes||{};
+      updateScoreUI();
+    });
+
+    // inline speler sync
     onSnapshot(doc(db,'games',id,'players',uid),(snap)=>{
       if(snap.exists()){
         const p=snap.data();
@@ -515,11 +490,7 @@
 
     listenPlayers();
     startLeaderboardListeners(id);
-    listenStickerEvents(id);
-
-    // default score owner = jezelf
-    scoreOwnerUid = uid;
-    listenScoresFor(scoreOwnerUid);
+    listenStickerEvents(id); // iedereen ziet stickers live
   }
 
   function listenPlayers(){
@@ -538,7 +509,6 @@
             <div class="muted sm">Flight: ${p.flight || '-'} • Tee: ${p.teeTime || '-'}</div>
           </div>
           <div class="inline">
-            <button class="btn sm" style="min-height:auto" data-score="${d.id}">ScoreCard</button>
             <button class="btn alt sm" style="min-height:auto" data-edit="${d.id}">Edit</button>
             <button class="btn sm" style="min-height:auto;background:#7a2030" data-del="${d.id}">Verwijder</button>
           </div>
@@ -546,11 +516,9 @@
         wrap.appendChild(line);
       });
 
-      // delete
       wrap.querySelectorAll('[data-del]').forEach(b=>{
         b.onclick = async ()=>{ await deleteDoc(doc(db,'games',gameId,'players', b.dataset.del)); };
       });
-      // edit -> laadt velden in form
       wrap.querySelectorAll('[data-edit]').forEach(b=>{
         b.onclick = async ()=>{
           const ref = doc(db,'games',gameId,'players', b.dataset.edit);
@@ -562,26 +530,6 @@
           el('plTee').value = p.teeTime || '';
           el('addPlayerBtn').textContent = 'Opslaan wijzigingen';
           el('addPlayerBtn').dataset.editing = b.dataset.edit;
-        };
-      });
-      // ScoreCard -> wissel eigenaar
-      wrap.querySelectorAll('[data-score]').forEach(b=>{
-        b.onclick = async ()=>{
-          const playerId = b.dataset.score;
-          const ref = doc(db,'games',gameId,'players', playerId);
-          const snap = await getDoc(ref);
-          const playerName = snap.exists() ? (snap.data().name || '—') : '—';
-
-          scoreOwnerUid = playerId;
-          listenScoresFor(scoreOwnerUid);
-          setForeignBanner(playerName, true);
-          setInlineDisabled(true);
-
-          // naar SCORE CARD tab
-          document.querySelector('.tabbtn.active')?.classList.remove('active');
-          document.querySelector('.tabbtn[data-tab="score"]').classList.add('active');
-          Object.values(views).forEach(v=>v.classList.remove('active'));
-          views['score'].classList.add('active');
         };
       });
     });
@@ -676,8 +624,7 @@
   function bigWinnerOverlay(name){
     const overlay = document.createElement('div');
     overlay.style.position='fixed'; overlay.style.inset='0'; overlay.style.background='rgba(0,0,0,.55)'; overlay.style.backdropFilter='blur(2px)';
-    overlay.style.display='flex'; overlay.style.flexDirection='column'; overlay.style.alignItems='center'; overlay.style.justify-content='center';
-    overlay.style.justifyContent='center';
+    overlay.style.display='flex'; overlay.style.flexDirection='column'; overlay.style.alignItems='center'; overlay.style.justifyContent='center';
     overlay.style.gap='12px'; overlay.style.zIndex=10050;
     const box = document.createElement('div');
     box.style.background='rgba(8,26,32,.97)'; box.style.border='3px solid #0a2732'; box.style.borderRadius='18px'; box.style.padding='18px 22px'; box.style.textAlign='center'; box.style.maxWidth='90vw';
@@ -730,9 +677,9 @@
     const key = stickerFor(s.total, par, s);
     if(key){
       s.sticker=key;
-      const img=el('stickerImg'); const src=stickerImg(key); if(src){ img.src=src; img.style.display='block'; }
+      const img=document.getElementById('stickerImg'); const src=stickerImg(key); if(src){ img.src=src; img.style.display='block'; }
       if(key==='birdie' || key==='eagle' || key==='par') confettiRain(3200);
-      const playerDoc = await getDoc(doc(db,'games',gameId,'players',scoreOwnerUid||uid));
+      const playerDoc = await getDoc(doc(db,'games',gameId,'players',uid));
       const playerName = playerDoc.exists()? (playerDoc.data().name||'Player') : 'Player';
       // Broadcast naar iedereen
       await addDoc(collection(db,'games',gameId,'events'), {type:'sticker', hole:currentHole, playerName, sticker:key, at:serverTimestamp()});
@@ -751,13 +698,6 @@
   document.getElementById('prevHole').onclick = ()=>{ const[sH,eH]=rangeBounds(); currentHole = currentHole>sH ? currentHole-1 : eH; updateHeader(); updateScoreUI(); };
   document.getElementById('nextHole').onclick = ()=>{ const[sH,eH]=rangeBounds(); currentHole = currentHole<eH ? currentHole+1 : sH; updateHeader(); updateScoreUI(); };
 
-  el('backToMe').onclick = ()=>{
-    scoreOwnerUid = uid;
-    listenScoresFor(scoreOwnerUid);
-    setForeignBanner('', false);
-    setInlineDisabled(false);
-  };
-
   /* Leaderboard */
   const LB = { players:{}, scores:{}, holesMeta:()=>holesData, range:()=>holeRange };
   const medal = i => (i===0?'🥇':i===1?'🥈':i===2?'🥉':'');
@@ -770,12 +710,17 @@
   function countSticker(holesObj,start,end,key){ let n=0; for(let h=start; h<=end; h++) if(holesObj?.[String(h)]?.sticker===key) n++; return n; }
 
   const STICKER_ORDER = ['albatross','eagle','birdie','par','bogey','double-bogey','triple-bogey','snowman','three-putt','mulligan'];
-  const STICKER_EMOJI = {'albatross':'🕊️','eagle':'🦅','birdie':'🐦','par':'✅','bogey':'➖','double-bogey':'➖➖','triple-bogey':'➖➖➖','snowman':'⛄','three-putt':'⛳️×3','mulligan':'🎁'};
+  const STICKER_EMOJI = {
+    'albatross':'🕊️','eagle':'🦅','birdie':'🐦','par':'✅','bogey':'➖','double-bogey':'➖➖','triple-bogey':'➖➖➖','snowman':'⛄','three-putt':'⛳️×3','mulligan':'🎁'
+  };
   function stickerChipsFor(holes,start,end){
     const chips=[];
     for(const k of STICKER_ORDER){
       const c = countSticker(holes,start,end,k);
-      if(c>0){ const label = STICKER_EMOJI[k] || k; chips.push(`<span class="tag sm" title="${k}">${label}×${c}</span>`); }
+      if(c>0){
+        const label = STICKER_EMOJI[k] || k;
+        chips.push(`<span class="tag sm" title="${k}">${label}×${c}</span>`);
+      }
     }
     return chips.join(' ');
   }
@@ -970,11 +915,11 @@
     await setDoc(doc(db,'games',gameId,'players',uid), {teeTime}, {merge:true});
   });
 
-  // Leaderboard actions
-  el('endRoundBtn').onclick = celebrateWinner;
-  el('refreshLbBtn').onclick = recomputeLeaderboard;
+  // Leaderboard acties
+  document.getElementById('endRoundBtn').onclick = celebrateWinner;
+  document.getElementById('refreshLbBtn').onclick = recomputeLeaderboard;
 
-  /* Sticker event feed (iedereen) */
+  /* ======= Sticker event feed (naar iedereen) ======= */
   function toast(msg){
     const wrap = el('toasts');
     const t = document.createElement('div'); t.className='toast';
