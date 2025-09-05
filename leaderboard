@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#0e2a35" />
+  <title>Leaderboard • Golf Course</title>
+  <style>
+    :root{
+      --bg:#0e2a35; --ink:#eaf8ff; --muted:#9fc0cf;
+      --panel:#133745; --panel2:#164554; --line:#092331;
+      --accent:#1b6177; --accent2:#154a5a; --good:#4ade80; --bad:#f87171;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial}
+    .app{max-width:1100px;margin:0 auto;padding:14px}
+    .header{
+      display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px
+    }
+    .badge{background:#e6f5fb;color:#0b2430;border-radius:.8rem;padding:.55rem .7rem;font-weight:800}
+    .badge.dim{background:#cfeef9}
+    .spacer{flex:1}
+    .card{background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:12px}
+    .controls{display:flex;gap:8px;flex-wrap:wrap}
+    .pill{background:#0c2f3a;border:1px solid var(--line);border-radius:10px;padding:9px 12px;color:var(--ink)}
+    select.pill{padding-right:28px}
+    .btn{
+      background:var(--accent);border:2px solid var(--line);color:var(--ink);
+      padding:.6rem .9rem;border-radius:12px;font-weight:900;cursor:pointer;user-select:none
+    }
+    .btn.alt{background:var(--accent2)}
+    .btn.ghost{background:transparent}
+    .muted{color:var(--muted)}
+    .grid{display:grid;gap:10px}
+    .table{width:100%;border-collapse:collapse}
+    .table th,.table td{border:1px solid var(--line);padding:8px;text-align:center}
+    .table th{background:#0c2f3a}
+    .left{text-align:left}.right{text-align:right}.center{text-align:center}
+    .chips{display:flex;flex-wrap:wrap;gap:6px}
+    .chip{background:#0c2f3a;border:1px solid var(--line);padding:.25rem .5rem;border-radius:.7rem;font-weight:800;font-size:.9rem}
+    .small{font-size:.9rem}
+    .legend{display:flex;gap:8px;flex-wrap:wrap}
+    .kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+    .kpi .tile{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center}
+    .tile .v{display:block;font-size:22px;font-weight:900}
+    .footer{display:flex;gap:8px;align-items:center;justify-content:space-between;margin-top:12px;flex-wrap:wrap}
+    canvas{max-width:100%;height:260px;background:#0c2f3a;border:1px solid var(--line);border-radius:12px}
+    .row{display:grid;grid-template-columns:1.2fr 1fr;gap:10px}
+    @media (max-width:960px){ .row{grid-template-columns:1fr} }
+    /* print */
+    @media print{
+      body{background:#fff;color:#000}
+      .card,.btn,.pill{filter:none}
+      .footer .btn, .controls .btn{display:none!important}
+      .app{padding:0}
+      .header .badge{background:#eee;color:#000}
+      .table th{background:#eee;color:#000}
+      canvas{display:none}
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="header">
+      <div id="gameName" class="badge">Leaderboard</div>
+      <div id="courseInfo" class="badge dim">—</div>
+      <div class="spacer"></div>
+      <div id="rangeInfo" class="badge dim">H01–H18</div>
+    </div>
+
+    <div class="card" style="margin-bottom:10px">
+      <div class="controls">
+        <select id="flightFilter" class="pill">
+          <option value="">Alle flights</option>
+        </select>
+        <select id="sortBy" class="pill">
+          <option value="net">Sorteer: Net ↑</option>
+          <option value="gross">Sorteer: Gross ↑</option>
+          <option value="time">Sorteer: Tijd ↑</option>
+          <option value="name">Sorteer: Naam A→Z</option>
+        </select>
+        <button id="shareBtn" class="btn">Deel link</button>
+        <button id="printBtn" class="btn alt">Print / PDF</button>
+        <span class="muted small" id="gameIdEcho"></span>
+      </div>
+    </div>
+
+    <div class="grid" style="margin-bottom:10px">
+      <div class="kpi">
+        <div class="tile"><span class="v" id="kpiPlayers">0</span><span class="muted small">Spelers</span></div>
+        <div class="tile"><span class="v" id="kpiFinished">0%</span><span class="muted small">Ronde gereed</span></div>
+        <div class="tile"><span class="v" id="kpiAvgNet">—</span><span class="muted small">Gem. Net</span></div>
+        <div class="tile"><span class="v" id="kpiStickers">—</span><span class="muted small">Stickers totaal</span></div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="card">
+        <h3 style="margin:6px 0 10px">Uitslag</h3>
+        <div class="muted small" id="subTitle">Gesorteerd op Net ↑</div>
+        <div id="leaderTableWrap"></div>
+      </div>
+      <div class="grid">
+        <div class="card">
+          <h3 style="margin:6px 0 10px">Net score per speler</h3>
+          <canvas id="chartNet"></canvas>
+        </div>
+        <div class="card">
+          <h3 style="margin:6px 0 10px">Totale speeltijd per speler</h3>
+          <canvas id="chartTime"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:10px">
+      <h3 style="margin:6px 0 10px">Hole-samenvatting</h3>
+      <div id="holesSummaryWrap"></div>
+    </div>
+
+    <div class="footer">
+      <div class="legend small">
+        <span class="chip">🥇/🥈/🥉 Top 3</span>
+        <span class="chip">✅ Par</span>
+        <span class="chip">🐦 Birdie</span>
+        <span class="chip">🦅 Eagle</span>
+        <span class="chip">⛄ Snowman</span>
+      </div>
+      <div class="muted small" id="updatedAt">—</div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+    import {
+      getFirestore, doc, getDoc, collection, getDocs
+    } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+
+    /* === Firebase config (zelfde project) === */
+    const firebaseConfig = {
+      apiKey: "AIzaSyBmLsJ5l3_733r3TMSMcQ3XTB7B5-lStTs",
+      authDomain: "golfcourse-mp-scorecard.firebaseapp.com",
+      projectId: "golfcourse-mp-scorecard",
+      storageBucket: "golfcourse-mp-scorecard.appspot.com",
+      messagingSenderId: "758687332564",
+      appId: "1:758687332564:web:7db1d2f2f27c3282f2e341"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db   = getFirestore(app);
+
+    /* === Utils === */
+    const qs = s => document.querySelector(s);
+    const el = id => document.getElementById(id);
+    const pad2 = n => String(n).padStart(2,'0');
+    const fmtTime = (sec)=>{
+      sec = Number(sec||0);
+      if(sec<=0) return '—';
+      const h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60), s=sec%60;
+      return h?`${h}:${pad2(m)}:${pad2(s)}`:`${m}:${pad2(s)}`;
+    };
+    const medal = i => (i===0?'🥇':i===1?'🥈':i===2?'🥉':'');
+
+    function rangeBoundsFrom(rg){ return rg==='10-18'?[10,18]:rg==='1-9'?[1,9]:[1,18]; }
+    function sumPar(holes,start,end){ let t=0; for(let h=start; h<=end; h++) t += Number(holes?.[h]?.par||4); return t; }
+    function sumGross(holesObj,start,end){ let t=0; for(let h=start; h<=end; h++) t += Number(holesObj?.[String(h)]?.total||0); return t; }
+    function sumTime(holesObj,start,end){ let t=0; for(let h=start; h<=end; h++) t += Number(holesObj?.[String(h)]?.duration||0); return t; }
+    function finishedCount(holesObj,start,end){ let n=0; for(let h=start; h<=end; h++) if(holesObj?.[String(h)]?.endTs) n++; return n; }
+
+    const STICKERS = ['albatross','eagle','birdie','par','bogey','double-bogey','triple-bogey','snowman','three-putt','mulligan'];
+    const EMOJI = {albatross:'🕊️', eagle:'🦅', birdie:'🐦', par:'✅', bogey:'➖', 'double-bogey':'➖➖', 'triple-bogey':'➖➖➖', snowman:'⛄', 'three-putt':'⛳×3', mulligan:'🎁'};
+
+    /* === Tiny chart helper (no deps) === */
+    function drawBarChart(canvas, labels, values, title=''){
+      const ctx = canvas.getContext('2d');
+      const W = canvas.width = canvas.clientWidth * devicePixelRatio;
+      const H = canvas.height = canvas.clientHeight * devicePixelRatio;
+      ctx.clearRect(0,0,W,H);
+      const padding = 40*devicePixelRatio;
+      const plotW = W - padding*2;
+      const plotH = H - padding*1.6;
+      const max = Math.max(1, ...values);
+      const barW = plotW / Math.max(1, values.length);
+      ctx.font = `${12*devicePixelRatio}px system-ui,Segoe UI,Roboto`;
+      ctx.fillStyle = "rgba(234,248,255,0.9)";
+      // title
+      if(title){
+        ctx.fillText(title, padding, padding*0.55);
+      }
+      // axes
+      ctx.strokeStyle = "rgba(159,192,207,0.6)";
+      ctx.beginPath();
+      ctx.moveTo(padding, H-padding);
+      ctx.lineTo(W-padding, H-padding);
+      ctx.moveTo(padding, H-padding);
+      ctx.lineTo(padding, padding);
+      ctx.stroke();
+      // bars
+      values.forEach((v,i)=>{
+        const h = (v/max) * (plotH-10*devicePixelRatio);
+        const x = padding + i*barW + barW*0.15;
+        const y = H - padding - h;
+        ctx.fillStyle = "rgba(27,97,119,0.85)";
+        ctx.fillRect(x, y, barW*0.7, h);
+      });
+      // x labels (rotated)
+      ctx.save();
+      ctx.translate(0,0);
+      ctx.fillStyle = "rgba(159,192,207,0.9)";
+      labels.forEach((lab,i)=>{
+        const x = padding + i*barW + barW*0.5;
+        const y = H - padding + 14*devicePixelRatio;
+        ctx.save();
+        ctx.translate(x,y);
+        ctx.rotate(-Math.PI/4);
+        ctx.textAlign="right";
+        ctx.fillText(lab,0,0);
+        ctx.restore();
+      });
+      ctx.restore();
+    }
+
+    /* === Renderers === */
+    function renderLeader(rows, parSum, range){
+      const wrap = el('leaderTableWrap');
+      wrap.innerHTML = `
+        <table class="table">
+          <thead>
+            <tr>
+              <th>#</th><th class="left">Speler</th><th>Flight</th><th>Tee</th>
+              <th>Gross</th><th>HCP</th><th>Net</th><th>±Par</th>
+              <th>Holes</th><th>Tijd totaal</th><th class="left">Stickers</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map((r,i)=>`
+              <tr>
+                <td>${medal(i) || (i+1)}</td>
+                <td class="left" style="font-weight:800">${r.name}</td>
+                <td>${r.flight||'-'}</td>
+                <td>${r.tee||'-'}</td>
+                <td>${r.gross}</td>
+                <td>${r.hcp}</td>
+                <td style="font-weight:900">${r.net}</td>
+                <td>${r.toPar>0?`+${r.toPar}`:r.toPar}</td>
+                <td>${r.done}/${r.total}</td>
+                <td>${fmtTime(r.time)}</td>
+                <td class="left">
+                  <div class="chips">
+                    ${Object.entries(r.stickers).filter(([,v])=>v>0).map(([k,v])=>`<span class="chip" title="${k}">${EMOJI[k]||k}×${v}</span>`).join('')}
+                  </div>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        <div class="muted small" style="margin-top:6px">
+          Range: H${String(range[0]).padStart(2,'0')}–H${String(range[1]).padStart(2,'0')} • Par som: ${parSum}
+        </div>`;
+    }
+
+    function renderHolesSummary(allScores, holesMeta, playersCount, range){
+      const [s,e] = range;
+      const rows = [];
+      for(let h=s; h<=e; h++){
+        let cnt=0, gross=0;
+        const counts = Object.fromEntries(STICKERS.map(k=>[k,0]));
+        for(const sc of allScores){
+          const hh = sc.holes?.[String(h)];
+          if(!hh) continue;
+          if(hh.total>0){ gross += Number(hh.total||0); cnt++; }
+          const st = hh.sticker; if(st && counts[st]!=null) counts[st]++;
+        }
+        const par = Number(holesMeta?.[h]?.par||4);
+        const avg = cnt? (gross/cnt) : 0;
+        rows.push({h, par, si: holesMeta?.[h]?.si ?? '-', avgDelta: cnt?(avg-par):0, counts});
+      }
+      const wrap = el('holesSummaryWrap');
+      wrap.innerHTML = `
+        <table class="table">
+          <thead>
+            <tr><th>Hole</th><th>Par</th><th>SI</th><th>Gem. ±Par</th><th class="left">Stickers</th></tr>
+          </thead>
+          <tbody>
+            ${rows.map(r=>`
+              <tr>
+                <td>H${String(r.h).padStart(2,'0')}</td>
+                <td>${r.par}</td>
+                <td>${r.si}</td>
+                <td style="color:${r.avgDelta<=0?'#9ae6b4':'#fecaca'};font-weight:800">${r.avgDelta>0?`+${r.avgDelta.toFixed(2)}`:r.avgDelta.toFixed(2)}</td>
+                <td class="left">
+                  <div class="chips">
+                    ${STICKERS.map(k=> r.counts[k]>0? `<span class="chip">${EMOJI[k]||k}×${r.counts[k]}</span>`:'').join('')}
+                  </div>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>`;
+    }
+
+    /* === Data load === */
+    const params = new URLSearchParams(location.search);
+    let gameId = params.get('game');
+    el('gameIdEcho').textContent = gameId ? `gameId: ${gameId}` : '—';
+
+    onAuthStateChanged(auth, async (user)=>{
+      if(!user){ await signInAnonymously(auth); return; }
+      if(!gameId){ alert('Geen gameId in de URL (?game=...)'); return; }
+      await loadAndRender(gameId);
+    });
+
+    async function loadAndRender(id){
+      const gDoc = await getDoc(doc(db,'games',id));
+      if(!gDoc.exists()){ alert('Wedstrijd niet gevonden'); return; }
+      const game = gDoc.data()||{};
+      const [start,end] = rangeBoundsFrom(game.holeRange||'1-18');
+      const parSum = sumPar(game.holes||{}, start, end);
+
+      el('gameName').textContent = game.name || 'Leaderboard';
+      el('courseInfo').textContent = (game.course?.name? game.course.name : '—') + (game.course?.city? ` • ${game.course.city}` : '');
+      el('rangeInfo').textContent = `H${pad2(start)}–H${pad2(end)}`;
+
+      // collections
+      const playersSnap = await getDocs(collection(db,'games',id,'players'));
+      const scoresSnap  = await getDocs(collection(db,'games',id,'scores'));
+
+      const players = {};
+      const flightsSet = new Set();
+      playersSnap.forEach(d=>{
+        const p = d.data()||{};
+        players[d.id] = p;
+        if(p.flight) flightsSet.add(p.flight);
+      });
+      // flight filter
+      const flightSel = el('flightFilter');
+      [...flightsSet].sort().forEach(f=>{
+        const opt = document.createElement('option'); opt.value=f; opt.textContent=`Flight ${f}`;
+        flightSel.appendChild(opt);
+      });
+
+      const scores = {};
+      const scoreArray = [];
+      scoresSnap.forEach(d=>{
+        const sc = d.data()||{};
+        scores[d.id] = sc;
+        scoreArray.push({uid:d.id, holes: sc.holes||{}});
+      });
+
+      // build rows
+      const rowsRaw = Object.keys(players).map(uid=>{
+        const p = players[uid] || {};
+        const holes = scores[uid]?.holes || {};
+        const gross = sumGross(holes, start, end);
+        const time  = sumTime(holes, start, end);
+        const done  = finishedCount(holes, start, end);
+        const stickers = Object.fromEntries(STICKERS.map(k=>[k,0]));
+        for(let h=start; h<=end; h++){
+          const hh = holes[String(h)];
+          if(hh?.sticker && stickers[hh.sticker]!=null) stickers[hh.sticker] += 1;
+        }
+        const r = {
+          uid,
+          name: p.name || '—',
+          flight: p.flight || '',
+          tee: p.teeTime || '',
+          hcp: Number(p.handicap||0),
+          gross,
+          net: gross - Number(p.handicap||0),
+          toPar: gross - parSum,
+          done, total: (end-start+1),
+          time,
+          stickers
+        };
+        return r;
+      });
+
+      // KPIs
+      const playersCount = rowsRaw.length;
+      const finishedPct  = rowsRaw.length ? Math.round(100 * rowsRaw.filter(r=>r.done===r.total).length / rowsRaw.length) : 0;
+      const avgNet       = rowsRaw.length ? (rowsRaw.reduce((a,b)=>a+b.net,0)/rowsRaw.length).toFixed(2) : '—';
+      const stickersTotal= rowsRaw.reduce((acc,r)=> acc + Object.values(r.stickers).reduce((a,b)=>a+b,0), 0);
+      el('kpiPlayers').textContent = playersCount;
+      el('kpiFinished').textContent = finishedPct + '%';
+      el('kpiAvgNet').textContent = avgNet;
+      el('kpiStickers').textContent = stickersTotal;
+
+      // UI actions
+      const sortSel = el('sortBy');
+      const flightFilter = el('flightFilter');
+      const apply = ()=>{
+        let rows = rowsRaw.filter(r=> !flightFilter.value || r.flight===flightFilter.value);
+        let label = 'Net ↑';
+        if(sortSel.value==='net'){ rows.sort((a,b)=> a.net-b.net || a.gross-b.gross || a.name.localeCompare(b.name)); label='Net ↑'; }
+        if(sortSel.value==='gross'){ rows.sort((a,b)=> a.gross-b.gross || a.net-b.net || a.name.localeCompare(b.name)); label='Gross ↑'; }
+        if(sortSel.value==='time'){ rows.sort((a,b)=> a.time-b.time || a.net-b.net); label='Tijd ↑'; }
+        if(sortSel.value==='name'){ rows.sort((a,b)=> a.name.localeCompare(b.name)); label='Naam A→Z'; }
+        el('subTitle').textContent = `Gesorteerd op ${label}`;
+        renderLeader(rows, parSum, [start,end]);
+
+        // charts
+        const labels = rows.map(r=> r.name.split(' ')[0]);
+        drawBarChart(el('chartNet'), labels, rows.map(r=> r.net), 'Net');
+        drawBarChart(el('chartTime'), labels, rows.map(r=> r.time || 0), 'Tijd (sec)');
+      };
+      sortSel.onchange = apply;
+      flightFilter.onchange = apply;
+      apply();
+
+      // holes summary
+      renderHolesSummary(scoreArray, game.holes||{}, playersCount, [start,end]);
+
+      // footer timestamp
+      el('updatedAt').textContent = 'Gegenereerd: ' + new Date().toLocaleString();
+
+      // share/print
+      el('shareBtn').onclick = async ()=>{
+        const url = location.href;
+        const data = {title:'Golf Leaderboard', text:'Eindstand van onze wedstrijd:', url};
+        try{
+          if(navigator.share){ await navigator.share(data); }
+          else { await navigator.clipboard.writeText(url); alert('Link gekopieerd:\n'+url); }
+        }catch{
+          try{ await navigator.clipboard.writeText(url); alert('Link gekopieerd:\n'+url); }
+          catch{ prompt('Kopieer de link:', url); }
+        }
+      };
+      el('printBtn').onclick = ()=> window.print();
+    }
+  </script>
+</body>
+</html>
