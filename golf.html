@@ -684,17 +684,27 @@ function clearCurrentHolePreserveTime() {
   }
 
   /* Score interacties */
-  function addStroke(kind){
-    const s = strokeState();
-    const countable=['D','W','P','3','4','5','6','7','8','9'];
-    if (kind === 'clear') {
-                        const ok = confirm('Weet je zeker dat je de score voor deze hole wilt wissen?');
-                        if (!ok) return;
-                        const cleared = clearCurrentHolePreserveTime();
-                        await persistHole(cleared);
-                        updateScoreUI(); // timer blijft zoals hij was
-                        return;
+ function addStroke(kind){
+
+  // --- CLEAR: wis slagen, behoud tijd ---
+  if (kind === 'clear') {
+    const ok = confirm('Weet je zeker dat je de score voor deze hole wilt wissen?');
+    if (!ok) return;
+
+    const cleared = clearCurrentHolePreserveTime();
+    persistHole(cleared);   // GEEN await hier
+    updateScoreUI();        // timer blijft zoals hij was
+    return;
+  }
+
+  // ... je bestaande logica hieronder ...
+  const s = strokeState();
+  const countable=['D','W','P','3','4','5','6','7','8','9'];
+  if(kind==='P'){ s.putts=(s.putts||0)+1; }
+  if(countable.includes(kind)){ if(!s.startTs) s.startTs=Date.now(); s.strokes.push(kind); s.total=(s.total||0)+1; }
+  // etc...
 }
+
     if(kind==='P'){ s.putts=(s.putts||0)+1; }
     if(countable.includes(kind)){ if(!s.startTs) s.startTs=Date.now(); s.strokes.push(kind); s.total=(s.total||0)+1; }
     if(kind==='ball'){  s.penalties.ball=(s.penalties.ball||0)+1; s.strokes.push('⚪'); s.total=(s.total||0)+1; if(!s.startTs) s.startTs=Date.now(); }
