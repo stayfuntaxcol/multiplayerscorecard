@@ -495,36 +495,62 @@
     await addDoc(collection(db,'games',gameId,'events'), {type:'sticker', hole, playerName, sticker:key, at:serverTimestamp()});
   }
 
-  document.getElementById('flagBtn').onclick = async ()=>{
-    const s = strokeState();
-    if(!s.strokes.includes('⛳')) s.strokes.push('⛳');
-    if(!s.startTs) s.startTs = Date.now();
-    if(!s.endTs){ s.endTs = Date.now(); s.duration = Math.floor((s.endTs - s.startTs)/1000); }
+ document.getElementById('flagBtn').onclick = async ()=>{
+  if(!gameId || !uid){ alert('Nog geen game actief.'); return; }
 
-    const par = holesData[currentHole]?.par ?? 0;
-    const key = stickerFor(s.total, par, s);
-    if(key){
-      s.sticker=key;
-      const img=document.getElementById('stickerImg'); const src=stickerImg(key); if(src){ img.src=src; img.style.display='block'; }
+  const s = strokeState();
+
+  // 1) altijd een starttijd hebben
+  if(!s.startTs) s.startTs = Date.now();
+
+  // 2) vlag altijd zichtbaar maken in de log als hij er nog niet staat
+  if(!s.strokes.includes('⛳')) s.strokes.push('⛳');
+
+  // 3) eindtijd/duur slechts één keer vastleggen
+  if(!s.endTs){
+    s.endTs = Date.now();
+    s.duration = Math.max(0, Math.floor((s.endTs - s.startTs)/1000));
+  }
+
+  // 4) sticker bepalen (ook als er vooraf al endTs was)
+  const par = holesData[currentHole]?.par ?? 0;
+  const key = stickerFor(s.total||0, par, s);
+  if(key){
+    s.sticker = key;
+
+    // toon speler-sticker
+    const img = document.getElementById('stickerImg');
+    const src = stickerImg(key);
+    if(src){ img.src = src; img.style.display = 'block'; }
+
+    // naam speler ophalen
+    let playerName = 'Player';
+    try{
       const playerDoc = await getDoc(doc(db,'games',gameId,'players',uid));
-      const playerName = playerDoc.exists()? (playerDoc.data().name||'Player') : 'Player';
+      if(playerDoc.exists()) playerName = playerDoc.data().name || playerName;
+    }catch{}
 
-      await broadcastSticker(currentHole, playerName, key);
-      successPop(`${playerName} heeft ${key.replace(/-/g,' ')}!`);
-      // Positieve confetti only
-      if(key==='eagle') emojiConfetti(['👑','🪩','🎉']);
-      else if(key==='birdie') emojiConfetti(['⭐','✨','🌟']);
-      else if(key==='par') emojiConfetti(['🪩','✨']);
-    }
+    // broadcast + popup
+    await broadcastSticker(currentHole, playerName, key);
+    successPop(`${playerName} heeft ${key.replace(/-/g,' ')}!`);
 
-    me = me || {}; me.holes = me.holes || {}; me.holes[String(currentHole)] = s;
-    await persistHole(s);
-    updateScoreUI();
+    // alleen positieve confetti
+    if(key==='eagle') emojiConfetti(['👑','🪩','🎉']);
+    else if(key==='birdie') emojiConfetti(['⭐','✨','🌟']);
+    else if(key==='par') emojiConfetti(['🪩','✨']);
+  }
 
-    const [sH,eH]=rangeBounds();
-    currentHole = currentHole<eH ? currentHole+1 : sH;
-    updateHeader(); updateScoreUI();
-  };
+  // 5) bewaren + UI
+  me = me || {}; me.holes = me.holes || {};
+  me.holes[String(currentHole)] = s;
+  await persistHole(s);
+  updateScoreUI();
+
+  // 6) optioneel automatisch naar volgende hole
+  const [sH,eH]=rangeBounds();
+  currentHole = currentHole<eH ? currentHole+1 : sH;
+  updateHeader(); updateScoreUI();
+};
 
   document.getElementById('prevHole').onclick = ()=>{ const[sH,eH]=rangeBounds(); currentHole = currentHole>sH ? currentHole-1 : eH; updateHeader(); updateScoreUI(); };
   document.getElementById('nextHole').onclick = ()=>{ const[sH,eH]=rangeBounds(); currentHole = currentHole<eH ? currentHole+1 : sH; updateHeader(); updateScoreUI(); };
