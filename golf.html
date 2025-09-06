@@ -392,7 +392,7 @@
   function mmss(sec){ const m=Math.floor(sec/60); const s=String(sec%60).padStart(2,'0'); return `${m}:${s}`; }
   function defaultHole(){
     return { strokes:[], putts:0, penalties:{ball:0,water:0,bunker:0,oob:0}, total:0, sticker:null,
-             startTs:null, endTs:null, duration:0, mulliganUsed:false, resigned:false };
+             startTs:null, endTs:null, duration:0, mulliganUsed:false};
   }
   function strokeState(){
     const all=(me&&me.holes)||{}; const key=String(currentHole);
@@ -418,7 +418,6 @@ function clearCurrentHolePreserveTime() {
     total: 0,
     sticker: null,
     mulliganUsed: false,
-    resigned: false,
     startTs: keepStart,
     endTs: keepEnd,
     duration: keepDur
