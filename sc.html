@@ -257,10 +257,21 @@
     el('holeHeader').innerHTML = `H${String(currentHole).padStart(2,'0')} • SI <span id="siTop">${d.si??'-'}</span> • <span id="teeTop">${el('playerTeeInline').value||'--:--'}</span> • Tijd <span id="timeTop">0:00</span>`;
   }
   function updateTimeUI(h){
-    const tTop = document.getElementById('timeTop'); if(!tTop) return;
-    let sec=0; if(h.endTs){ sec=h.duration||0; } else if(h.startTs){ sec=Math.floor((Date.now()-h.startTs)/1000); }
-    tTop.textContent = mmss(sec);
-  }
+const tTop = document.getElementById('timeTop');
+if(!tTop) return;
+// Als de hole al klaar is: gebruik de vastgelegde duur
+if(h.endTs){
+const sec = Number(h.duration||0);
+const m=Math.floor(sec/60), s=String(sec%60).padStart(2,'0');
+tTop.textContent = `${m}:${s}`;
+return;
+}
+// Anders: live doortellen sinds start
+let sec=0;
+if(h.startTs){ sec=Math.max(0, Math.floor((Date.now()-h.startTs)/1000)); }
+const m=Math.floor(sec/60), s=String(sec%60).padStart(2,'0');
+tTop.textContent = `${m}:${s}`;
+}
   function updateHeader(){
     const d=holesData[currentHole]||{distance:'000',si:'-'};
     el('holeCode').textContent = `H${String(currentHole).padStart(2,'0')}`;
@@ -366,6 +377,7 @@
   }
 
   /* ===== Stickers / Effects ===== */
+
   function stickerFor(total,par,extra){
     const d=total-par;
     if(total===8) return 'snowman';
@@ -450,42 +462,57 @@
   }
 
   function addStroke(kind){
-    // CLEAR
-    if(kind==='clear'){
-      const ok = confirm('Weet je zeker dat je de score voor deze hole wilt wissen?');
-      if(!ok) return;
-      const cleared = clearCurrentHolePreserveTime();
-      persistHole(cleared);
-      updateScoreUI();
-      return;
-    }
+  // --- CLEAR: wis slagen, maar behoud tijd ---
+  if (kind === 'clear') {
+    const ok = confirm('Weet je zeker dat je de score voor deze hole wilt wissen?');
+    if (!ok) return;
 
-    const s = strokeState();
-    const countable=['D','W','P','3','4','5','6','7','8','9'];
-    if(kind==='P'){ s.putts=(s.putts||0)+1; }
-    if(countable.includes(kind)){
-      if(!s.startTs) s.startTs=Date.now();
-      s.strokes.push(kind); s.total=(s.total||0)+1;
-    }
-    if(kind==='ball'){  s.penalties.ball=(s.penalties.ball||0)+1; s.strokes.push('⚪'); s.total=(s.total||0)+1; if(!s.startTs) s.startTs=Date.now(); }
-    if(kind==='water'){ s.penalties.water=(s.penalties.water||0)+1; s.strokes.push('💧'); s.total=(s.total||0)+1; if(!s.startTs) s.startTs=Date.now(); }
-    if(kind==='bunker'){ s.penalties.bunker=(s.penalties.bunker||0)+1; s.strokes.push('🏜️'); }
-    if(kind==='oob'){ s.penalties.oob=(s.penalties.oob||0)+1; s.strokes.push('🌲'); s.total=(s.total||0)+1; if(!s.startTs) s.startTs=Date.now(); }
-    if(kind==='star'){ s.strokes.push('⭐'); }
-    if(kind==='mulligan'){
-      if(s.mulliganUsed){ alert('Mulligan al gebruikt op deze hole.'); return; }
-      const reversible=['D','W','P','3','4','5','6','7','8','9','⚪','💧'];
-      if(s.strokes.length){
-        const last = s.strokes[s.strokes.length-1];
-        if(reversible.includes(last)){ s.strokes.pop(); s.total=Math.max(0,(s.total||0)-1); }
-        else{ for(let i=s.strokes.length-1;i>=0;i--){ if(reversible.includes(s.strokes[i])){ s.strokes.splice(i,1); s.total=Math.max(0,(s.total||0)-1); break; } } }
-      }
-      s.mulliganUsed=true; s.strokes.push('🎁');
-    }
-
-    me = me || {}; me.holes = me.holes || {}; me.holes[String(currentHole)] = s;
-    updateScoreUI(); persistHole(s);
+    const cleared = clearCurrentHolePreserveTime(); // jouw helper bewaart startTs/endTs/duration
+    me = me || {}; me.holes = me.holes || {};
+    me.holes[String(currentHole)] = cleared;
+    persistHole(cleared);
+    updateScoreUI();
+    return;
   }
+
+  // Normale invoer
+  const s = strokeState();
+  const countable=['D','W','P','3','4','5','6','7','8','9'];
+
+  if(kind==='P'){ s.putts=(s.putts||0)+1; }
+
+  if(countable.includes(kind)){
+    if(!s.startTs) s.startTs=Date.now();
+    s.strokes.push(kind);
+    s.total=(s.total||0)+1;
+  }
+
+  if(kind==='ball'){  s.penalties.ball=(s.penalties.ball||0)+1;  s.strokes.push('⚪'); s.total=(s.total||0)+1; if(!s.startTs) s.startTs=Date.now(); }
+  if(kind==='water'){ s.penalties.water=(s.penalties.water||0)+1; s.strokes.push('💧'); s.total=(s.total||0)+1; if(!s.startTs) s.startTs=Date.now(); }
+  if(kind==='bunker'){ s.penalties.bunker=(s.penalties.bunker||0)+1; s.strokes.push('🏜️'); }
+  if(kind==='oob'){ s.penalties.oob=(s.penalties.oob||0)+1; s.strokes.push('🌲'); s.total=(s.total||0)+1; if(!s.startTs) s.startTs=Date.now(); }
+  if(kind==='star'){ s.strokes.push('⭐'); }
+
+  if(kind==='mulligan'){
+    if(s.mulliganUsed){ alert('Mulligan al gebruikt op deze hole.'); return; }
+    const reversible=['D','W','P','3','4','5','6','7','8','9','⚪','💧'];
+    if(s.strokes.length){
+      const last = s.strokes[s.strokes.length-1];
+      if(reversible.includes(last)){ s.strokes.pop(); s.total=Math.max(0,(s.total||0)-1); }
+      else{
+        for(let i=s.strokes.length-1;i>=0;i--){
+          if(reversible.includes(s.strokes[i])){ s.strokes.splice(i,1); s.total=Math.max(0,(s.total||0)-1); break; }
+        }
+      }
+    }
+    s.mulliganUsed=true; s.strokes.push('🎁');
+  }
+
+  me = me || {}; me.holes = me.holes || {};
+  me.holes[String(currentHole)] = s;
+  updateScoreUI();
+  persistHole(s);
+}
 
   document.querySelectorAll('[data-club]').forEach(b=>b.onclick=()=>addStroke(b.dataset.club));
   document.querySelectorAll('[data-special]').forEach(b=>b.onclick=()=>addStroke(b.dataset.special));
@@ -495,61 +522,71 @@
     await addDoc(collection(db,'games',gameId,'events'), {type:'sticker', hole, playerName, sticker:key, at:serverTimestamp()});
   }
 
- document.getElementById('flagBtn').onclick = async ()=>{
-  if(!gameId || !uid){ alert('Nog geen game actief.'); return; }
+document.getElementById('flagBtn').onclick = async ()=>{
+if(!gameId || !uid){ alert('Nog geen game actief.'); return; }
 
-  const s = strokeState();
 
-  // 1) altijd een starttijd hebben
-  if(!s.startTs) s.startTs = Date.now();
+const s = strokeState();
 
-  // 2) vlag altijd zichtbaar maken in de log als hij er nog niet staat
-  if(!s.strokes.includes('⛳')) s.strokes.push('⛳');
 
-  // 3) eindtijd/duur slechts één keer vastleggen
-  if(!s.endTs){
-    s.endTs = Date.now();
-    s.duration = Math.max(0, Math.floor((s.endTs - s.startTs)/1000));
-  }
+// 1) altijd een starttijd hebben (als iemand direct uitholet)
+if(!s.startTs) s.startTs = Date.now();
 
-  // 4) sticker bepalen (ook als er vooraf al endTs was)
-  const par = holesData[currentHole]?.par ?? 0;
-  const key = stickerFor(s.total||0, par, s);
-  if(key){
-    s.sticker = key;
 
-    // toon speler-sticker
-    const img = document.getElementById('stickerImg');
-    const src = stickerImg(key);
-    if(src){ img.src = src; img.style.display = 'block'; }
+// 2) vlag in de slaglog
+if(!s.strokes.includes('⛳')) s.strokes.push('⛳');
 
-    // naam speler ophalen
-    let playerName = 'Player';
-    try{
-      const playerDoc = await getDoc(doc(db,'games',gameId,'players',uid));
-      if(playerDoc.exists()) playerName = playerDoc.data().name || playerName;
-    }catch{}
 
-    // broadcast + popup
-    await broadcastSticker(currentHole, playerName, key);
-    successPop(`${playerName} heeft ${key.replace(/-/g,' ')}!`);
+// 3) eindtijd/duur exact één keer vastleggen en daarna niet meer wijzigen
+if(!s.endTs){
+s.endTs = Date.now();
+s.duration = Math.max(0, Math.floor((s.endTs - s.startTs)/1000));
+}
 
-    // alleen positieve confetti
-    if(key==='eagle') emojiConfetti(['👑','🪩','🎉']);
-    else if(key==='birdie') emojiConfetti(['⭐','✨','🌟']);
-    else if(key==='par') emojiConfetti(['🪩','✨']);
-  }
 
-  // 5) bewaren + UI
-  me = me || {}; me.holes = me.holes || {};
-  me.holes[String(currentHole)] = s;
-  await persistHole(s);
-  updateScoreUI();
+// 4) sticker bepalen (ook als er vooraf al endTs was)
+const par = holesData[currentHole]?.par ?? 0;
+const key = stickerFor(s.total||0, par, s);
+if(key){
+s.sticker = key;
 
-  // 6) optioneel automatisch naar volgende hole
-  const [sH,eH]=rangeBounds();
-  currentHole = currentHole<eH ? currentHole+1 : sH;
-  updateHeader(); updateScoreUI();
+
+// Toon speler-sticker
+const img = document.getElementById('stickerImg');
+const src = stickerImg(key);
+if(src){ img.src = src; img.style.display = 'block'; }
+
+
+// Broadcast + popup
+let playerName = 'Player';
+try{
+const playerDoc = await getDoc(doc(db,'games',gameId,'players',uid));
+if(playerDoc.exists()) playerName = playerDoc.data().name || playerName;
+}catch{}
+
+
+await broadcastSticker(currentHole, playerName, key);
+successPop(`${playerName} heeft ${key.replace(/-/g,' ')}!`);
+
+
+// Positieve confetti
+if(key==='eagle') emojiConfetti(['👑','🪩','🎉']);
+else if(key==='birdie') emojiConfetti(['⭐','✨','🌟']);
+else if(key==='par') emojiConfetti(['🪩','✨']);
+}
+
+
+// 5) bewaren + UI ververst (timer stopt nu, want endTs bestaat)
+me = me || {}; me.holes = me.holes || {};
+me.holes[String(currentHole)] = s;
+await persistHole(s);
+updateScoreUI();
+
+
+// 6) (optioneel) automatisch naar volgende hole
+const [sH,eH]=rangeBounds();
+currentHole = currentHole<eH ? currentHole+1 : sH;
+updateHeader(); updateScoreUI();
 };
 
   document.getElementById('prevHole').onclick = ()=>{ const[sH,eH]=rangeBounds(); currentHole = currentHole>sH ? currentHole-1 : eH; updateHeader(); updateScoreUI(); };
