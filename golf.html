@@ -175,7 +175,7 @@
               <div class="grid4" style="margin-top:8px">
                 <button class="btn alt" data-special="oob" aria-label="out of bounds">🌲</button>
                 <button class="btn alt" data-special="star" aria-label="highlight shot">⭐</button>
-                <button class="btn alt" data-special="clear" aria-label="Clear score" title="Wis slagen">🗑️</button>
+                <button class="btn alt" data-special="resign" aria-label="opgegeven">🔴</button>
                 <button id="flagBtn" class="btn alt" aria-label="hole klaar" title="Hole klaar">
                   <svg width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                     <path d="M5 3v18" stroke="#8fb3ff" stroke-width="2"/>
@@ -392,7 +392,7 @@
   function mmss(sec){ const m=Math.floor(sec/60); const s=String(sec%60).padStart(2,'0'); return `${m}:${s}`; }
   function defaultHole(){
     return { strokes:[], putts:0, penalties:{ball:0,water:0,bunker:0,oob:0}, total:0, sticker:null,
-             startTs:null, endTs:null, duration:0, mulliganUsed:false};
+             startTs:null, endTs:null, duration:0, mulliganUsed:false, resigned:false };
   }
   function strokeState(){
     const all=(me&&me.holes)||{}; const key=String(currentHole);
@@ -404,31 +404,6 @@
     me.holes[String(currentHole)] = hstate;
     await setDoc(doc(db,'games',gameId,'scores',uid), {holes:me.holes},{merge:true});
   }
-
-function clearCurrentHolePreserveTime() {
-  const s = strokeState(); // huidige hole-state
-  const keepStart = s.startTs ?? null;
-  const keepEnd   = s.endTs ?? null;
-  const keepDur   = s.duration ?? 0;
-  const cleared = {
-    ...s,
-    strokes: [],
-    putts: 0,
-    penalties: { ball: 0, water: 0, bunker: 0, oob: 0 },
-    total: 0,
-    sticker: null,
-    mulliganUsed: false,
-    startTs: keepStart,
-    endTs: keepEnd,
-    duration: keepDur
-  };
-
-  me = me || {};
-  me.holes = me.holes || {};
-  me.holes[String(currentHole)] = cleared;
-
-  return cleared;
-}
 
   /* Tijd/SI/TeeTime bovenin */
   function updateTopBar(){
@@ -683,27 +658,9 @@ function clearCurrentHolePreserveTime() {
   }
 
   /* Score interacties */
- function addStroke(kind){
-
-  // --- CLEAR: wis slagen, behoud tijd ---
-  if (kind === 'clear') {
-    const ok = confirm('Weet je zeker dat je de score voor deze hole wilt wissen?');
-    if (!ok) return;
-
-    const cleared = clearCurrentHolePreserveTime();
-    persistHole(cleared);   // GEEN await hier
-    updateScoreUI();        // timer blijft zoals hij was
-    return;
-  }
-
-  // ... je bestaande logica hieronder ...
-  const s = strokeState();
-  const countable=['D','W','P','3','4','5','6','7','8','9'];
-  if(kind==='P'){ s.putts=(s.putts||0)+1; }
-  if(countable.includes(kind)){ if(!s.startTs) s.startTs=Date.now(); s.strokes.push(kind); s.total=(s.total||0)+1; }
-  // etc...
-}
-
+  function addStroke(kind){
+    const s = strokeState();
+    const countable=['D','W','P','3','4','5','6','7','8','9'];
     if(kind==='P'){ s.putts=(s.putts||0)+1; }
     if(countable.includes(kind)){ if(!s.startTs) s.startTs=Date.now(); s.strokes.push(kind); s.total=(s.total||0)+1; }
     if(kind==='ball'){  s.penalties.ball=(s.penalties.ball||0)+1; s.strokes.push('⚪'); s.total=(s.total||0)+1; if(!s.startTs) s.startTs=Date.now(); }
@@ -711,7 +668,7 @@ function clearCurrentHolePreserveTime() {
     if(kind==='bunker'){ s.penalties.bunker=(s.penalties.bunker||0)+1; s.strokes.push('🏜️'); }
     if(kind==='oob'){ s.penalties.oob=(s.penalties.oob||0)+1; s.strokes.push('🌲'); s.total=(s.total||0)+1; if(!s.startTs) s.startTs=Date.now(); }
     if(kind==='star'){ s.strokes.push('⭐'); }
-  
+    if(kind==='resign'){ s.resigned=true; s.strokes.push('🔴'); }
     if(kind==='mulligan'){
       if(s.mulliganUsed){ alert('Mulligan al gebruikt op deze hole.'); return; }
       const reversible=['D','W','P','3','4','5','6','7','8','9','⚪','💧'];
