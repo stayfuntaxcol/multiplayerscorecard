@@ -1,1 +1,615 @@
 
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0e2a35" />
+  <title>Score Card • Golfcourse MP</title>
+  <style>
+  :root{
+    --bg:#0e2a35; --ink:#eaf8ff; --muted:#9fc0cf;
+    --panel:#133745; --panel2:#164554; --line:#092331; --btn:#1b6177; --btn2:#154a5a;
+    --touch:56px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial;background:var(--bg);color:var(--ink)}
+  .app{max-width:1100px;margin:0 auto;padding:12px 12px calc(20px + env(safe-area-inset-bottom))}
+  .header{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .badge{background:#e6f5fb;color:#0b2430;border-radius:.8rem;padding:.55rem .7rem;font-weight:800}
+  .badge.dim{background:#cfeef9}
+  .spacer{flex:1}
+  .layout{display:grid;grid-template-columns:1fr;gap:12px;margin-top:8px}
+  .card{background:var(--panel);border:2px solid var(--line);border-radius:12px;padding:10px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .tile{background:var(--panel2);border-radius:10px;padding:12px;text-align:center;font-weight:800}
+  .tile.huge{font-size:56px;line-height:1.05}
+  .pill{background:#0c2f3a;border:1px solid var(--line);border-radius:8px;padding:10px;color:var(--ink);width:100%}
+  .pill.biginput{font-size:1.1rem;font-weight:900}
+  .muted{color:var(--muted);font-size:.9rem}
+  .btn{display:inline-flex;align-items:center;justify-content:center;background:var(--btn);border:2px solid var(--line);border-radius:12px;min-height:var(--touch);font-size:1.05rem;font-weight:800;color:var(--ink);padding:.6rem .9rem;cursor:pointer;user-select:none;transition:.2s transform}
+  .btn:active{transform:translateY(1px)}
+  .btn.alt{background:var(--btn2)}
+
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+
+  /* Stickers altijd naast elkaar */
+  .stickersRow{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:stretch}
+  .sticker{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:140px;background:#103947;border-radius:12px;overflow:hidden}
+  .sticker img{max-height:100px;max-width:100%}
+  .sticker .caption{margin-top:6px;font-size:.9rem;color:var(--muted);font-weight:800}
+
+  /* Slaglog: gelijke vakken */
+  .loggrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+  .loggrid .cell{
+    background:#0c2f3a;border:1px solid var(--line);border-radius:8px;
+    height:44px; min-width:0;
+    display:flex; align-items:center; justify-content:center;
+    font-weight:900; font-size:20px; line-height:1;
+    padding:0;
+  }
+  .loggrid .cell svg{width:22px;height:22px;display:block}
+
+  #confetti{position:fixed;inset:0;pointer-events:none}
+  .small{display:block;font-size:.9rem;font-weight:700;opacity:.95;margin-top:6px}
+  .scoreGrid{display:grid;grid-template-columns:1fr 1.2fr;gap:10px}
+  @media (max-width:900px){ .scoreGrid{grid-template-columns:1fr} }
+
+  /* Toasts */
+  .toasts{position:fixed;right:12px;bottom:12px;display:flex;flex-direction:column;gap:8px;z-index:9999}
+  .toast{background:rgba(16,57,71,.95);border:1px solid #0a2b39;border-radius:10px;padding:10px 12px;box-shadow:0 10px 24px rgba(0,0,0,.28)}
+  .toast .title{font-weight:900}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="header">
+      <div id="gameTitle" class="badge">Golf Course</div>
+      <div id="holeHeader" class="badge dim">
+        H01 • SI <span id="siTop">-</span> • <span id="teeTop">--:--</span> • Tijd <span id="timeTop">0:00</span>
+      </div>
+      <div class="spacer"></div>
+    </div>
+
+    <div class="layout">
+      <div class="card">
+        <!-- ===== SCORE CARD (solo pagina) ===== -->
+        <div id="view-score" class="view active">
+          <div class="row" style="margin-bottom:8px">
+            <div>
+              <div class="muted">Speler</div>
+              <input id="playerNameInline" class="pill biginput" placeholder="Jouw naam">
+            </div>
+            <div>
+              <div class="muted">Handicap</div>
+              <input id="playerHcpInline" class="pill biginput" type="number" step="1" value="0">
+            </div>
+          </div>
+          <div class="row" style="margin-bottom:8px">
+            <div>
+              <div class="muted">Flight</div>
+              <input id="playerFlightInline" class="pill biginput" placeholder="A / 1 / …">
+            </div>
+            <div>
+              <div class="muted">TeeTime</div>
+              <input id="playerTeeInline" class="pill biginput" type="time">
+            </div>
+          </div>
+
+          <div class="row">
+            <div id="holeCode" class="tile huge">H01</div>
+            <div id="holeDist" class="tile huge">000</div>
+          </div>
+
+          <div class="scoreGrid" style="margin-top:10px">
+            <div>
+              <div class="tile" style="display:flex;align-items:center;justify-content:space-between;font-size:36px;font-weight:900;margin-bottom:8px;padding:12px 14px">
+                <span>Slag <span id="strokeAbove">0</span></span>
+                <span class="muted" style="font-size:20px">Par <span id="parRight">?</span></span>
+              </div>
+
+              <!-- Stickers: altijd naast elkaar -->
+              <div class="stickersRow">
+                <div class="sticker" id="stickerBoxPlayer">
+                  <img id="stickerImg" src="" alt="Jouw sticker" style="display:none">
+                  <div class="caption" id="stickerCapPlayer">Jij</div>
+                </div>
+                <div class="sticker" id="stickerBoxLeader" title="Tik = volgende leider • Lang ingedrukt = reset">
+                  <img id="stickerImgLeader" src="" alt="#1 sticker" style="display:none">
+                  <div class="caption" id="stickerCapLeader">#1 Leader</div>
+                </div>
+              </div>
+
+              <!-- Pop-up success onder stickers -->
+              <div id="successPop" class="muted" style="text-align:center;margin-top:8px;display:none"></div>
+            </div>
+            <div>
+              <div class="grid5" style="margin-bottom:8px">
+                <button class="btn" data-club="D">D</button>
+                <button class="btn" data-club="3">3</button>
+                <button class="btn" data-club="4">4</button>
+                <button class="btn" data-club="5">5</button>
+                <button class="btn" data-club="6">6</button>
+                <button class="btn" data-club="7">7</button>
+                <button class="btn" data-club="8">8</button>
+                <button class="btn" data-club="9">9</button>
+                <button class="btn" data-club="W">W</button>
+                <button class="btn" data-club="P">P</button>
+              </div>
+              <div class="grid4">
+                <button class="btn alt" data-special="ball"   aria-label="nieuwe bal">⚪</button>
+                <button class="btn alt" data-special="bunker" aria-label="bunker">🏜️</button>
+                <button class="btn alt" data-special="water"  aria-label="water">💧</button>
+                <button class="btn alt" data-special="mulligan" aria-label="mulligan">🎁</button>
+              </div>
+              <div class="grid4" style="margin-top:8px">
+                <button class="btn alt" data-special="oob" aria-label="out of bounds">🌲</button>
+                <button class="btn alt" data-special="star" aria-label="highlight shot">⭐</button>
+                <button class="btn alt" data-special="clear" aria-label="Clear score" title="Wis slagen">🗑️</button>
+                <button id="flagBtn" class="btn alt" aria-label="hole klaar" title="Hole klaar">
+                  <svg width="22" height="22" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M5 3v18" stroke="#8fb3ff" stroke-width="2"/>
+                    <path d="M6 4h11l-3 3 3 3H6z" fill="#3b82f6"/>
+                    <circle cx="6" cy="20" r="2" fill="#0b2740"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="row" style="margin-top:10px">
+            <div>
+              <div class="muted" style="margin-bottom:6px">Slaglog</div>
+              <div id="strokeLog" class="loggrid"></div>
+            </div>
+            <div>
+              <div class="muted" style="margin-bottom:6px">Totaal hole</div>
+              <div class="pill" style="font-size:22px;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center">
+                <span id="holeTotal">0</span>
+                <span id="overPar" style="color:#9fb0ba;font-weight:800">±0</span>
+              </div>
+              <div id="deltaTxt" class="muted">t.o.v. Par: 0</div>
+              <div class="row" style="margin-top:8px">
+                <div class="pill">Putts: <span id="puts">0</span></div>
+                <div class="pill">Ball: <span id="penBall">0</span></div>
+              </div>
+              <div class="row" style="margin-top:6px">
+                <div class="pill">Water: <span id="penWater">0</span></div>
+                <div class="pill">Bunker: <span id="penBunker">0</span></div>
+              </div>
+              <div class="row" style="margin-top:6px">
+                <button id="prevHole" class="btn">Vorige</button>
+                <button id="nextHole" class="btn">Volgende</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div><!--/card-->
+    </div><!--/layout-->
+  </div><!--/app-->
+
+  <div class="toasts" id="toasts"></div>
+  <canvas id="confetti"></canvas>
+
+  <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+  import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+  import {
+    getFirestore, doc, setDoc, getDoc, onSnapshot, serverTimestamp,
+    collection, addDoc, getDocs, query
+  } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+
+  /* Firebase config (jouw project) */
+  const firebaseConfig = {
+    apiKey: "AIzaSyBmLsJ5l3_733r3TMSMcQ3XTB7B5-lStTs",
+    authDomain: "golfcourse-mp-scorecard.firebaseapp.com",
+    projectId: "golfcourse-mp-scorecard",
+    storageBucket: "golfcourse-mp-scorecard.appspot.com",
+    messagingSenderId: "758687332564",
+    appId: "1:758687332564:web:7db1d2f2f27c3282f2e341"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db   = getFirestore(app);
+
+  /* ===== STATE ===== */
+  let uid=null;
+  let gameId = new URLSearchParams(location.search).get('game') || null;
+  let currentHole = 1;
+  let holeRange = '1-18';
+  let holesData = {}; // {1:{par,distance,si,name},...}
+  let me = null;      // {holes:{}}
+  let hostUid = null;
+  let shareEnabled = true;
+  const fxState = { dur:3200, speed:4, int:140 };
+
+  // leaderboard sticker browse state
+  let lbOrder = []; // [{uid,name},...]
+  let lbIndex = 0;
+  const LB = { players:{}, scores:{} };
+
+  const el = id => document.getElementById(id);
+  const rangeBounds = ()=> holeRange==='1-9' ? [1,9] : holeRange==='10-18' ? [10,18] : [1,18];
+  function blankHoles(){ const o={}; for(let i=1;i<=18;i++) o[i]={par:4,distance:300,si:i,name:''}; return o; }
+  function mmss(sec){ const m=Math.floor(sec/60); const s=String(sec%60).padStart(2,'0'); return `${m}:${s}`; }
+  function formatTotalTime(sec){ if(!sec||sec<=0) return '—'; const h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60), s=sec%60; return h?`${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`:`${m}:${String(s).padStart(2,'0')}`; }
+
+  function defaultHole(){
+    return { strokes:[], putts:0, penalties:{ball:0,water:0,bunker:0,oob:0}, total:0, sticker:null,
+             startTs:null, endTs:null, duration:0, mulliganUsed:false };
+  }
+  function strokeState(){
+    const all=(me&&me.holes)||{}; const key=String(currentHole);
+    return JSON.parse(JSON.stringify(all[key] || defaultHole()));
+  }
+  async function persistHole(hstate){
+    if(!gameId||!uid) return;
+    me = me || {}; me.holes = me.holes || {};
+    me.holes[String(currentHole)] = hstate;
+    await setDoc(doc(db,'games',gameId,'scores',uid), {holes:me.holes},{merge:true});
+  }
+
+  /* ===== UI helpers ===== */
+  function updateTopBar(){
+    const d=holesData[currentHole]||{si:'-',distance:'000'};
+    el('holeHeader').innerHTML = `H${String(currentHole).padStart(2,'0')} • SI <span id="siTop">${d.si??'-'}</span> • <span id="teeTop">${el('playerTeeInline').value||'--:--'}</span> • Tijd <span id="timeTop">0:00</span>`;
+  }
+  function updateTimeUI(h){
+    const tTop = document.getElementById('timeTop'); if(!tTop) return;
+    let sec=0; if(h.endTs){ sec=h.duration||0; } else if(h.startTs){ sec=Math.floor((Date.now()-h.startTs)/1000); }
+    tTop.textContent = mmss(sec);
+  }
+  function updateHeader(){
+    const d=holesData[currentHole]||{distance:'000',si:'-'};
+    el('holeCode').textContent = `H${String(currentHole).padStart(2,'0')}`;
+    el('holeDist').textContent = d.distance;
+    updateTopBar();
+  }
+  function updateScoreUI(){
+    const h = strokeState();
+    el('puts').textContent      = h.putts||0;
+    el('penBall').textContent   = h.penalties?.ball||0;
+    el('penWater').textContent  = h.penalties?.water||0;
+    el('penBunker').textContent = h.penalties?.bunker||0;
+
+    const log = el('strokeLog');
+    const BLUE_FLAG_SVG = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M5 3v18" stroke="#8fb3ff" stroke-width="2"/><path d="M6 4h11l-3 3 3 3H6z" fill="#3b82f6"/></svg>';
+    log.innerHTML = (h.strokes||[]).slice(-16).map(s=> s==='⛳' ? `<div class="cell">${BLUE_FLAG_SVG}</div>` : `<div class="cell">${s}</div>`).join('');
+
+    const par = holesData[currentHole]?.par ?? 0;
+    el('parRight').textContent = par ?? '?';
+
+    el('holeTotal').textContent = h.total||0;
+    el('overPar').textContent   = ((h.total||0)-par)>0?`+${(h.total||0)-par}`:`${(h.total||0)-par}`;
+    el('deltaTxt').textContent  = `t.o.v. Par: ${(h.total||0)-par}`;
+    const sa = document.getElementById('strokeAbove'); if(sa) sa.textContent=h.total||0;
+
+    updateTimeUI(h);
+
+    // Speler sticker
+    const img = document.getElementById('stickerImg');
+    if(h.sticker){ img.src = stickerImg(h.sticker)||''; img.style.display='block'; } else { img.src=''; img.style.display='none'; }
+
+    // Leider sticker voor deze hole
+    renderLeaderStickerForHole(currentHole);
+  }
+
+  /* ===== AUTH / GAME ===== */
+  onAuthStateChanged(auth, async (user)=>{
+    if(!user){ await signInAnonymously(auth); return; }
+    uid=user.uid;
+    if(!gameId){ gameId = await createNewGame(uid); }
+    if(gameId) subscribeGame(gameId);
+  });
+
+  async function createNewGame(hostUid){
+    const payload = {
+      name: 'Nieuwe Wedstrijd',
+      holeRange: '1-18',
+      defaultTeeTime: null,
+      defaultFlight: null,
+      course: { name:null, city:null },
+      holes: blankHoles(),
+      hostUid: hostUid || null,
+      shareEnabled: true,
+      fx: { dur: 3200, speed: 4, int: 140 },
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    };
+    const ref = await addDoc(collection(db,'games'), payload);
+    history.replaceState({}, '', `${location.pathname}?game=${ref.id}`);
+    return ref.id;
+  }
+
+  async function subscribeGame(id){
+    onSnapshot(doc(db,'games',id),(snap)=>{
+      if(!snap.exists()) return;
+      const g=snap.data();
+      holeRange = g.holeRange || '1-18';
+      holesData = g.holes || blankHoles();
+      hostUid = g.hostUid || null;
+      shareEnabled = g.shareEnabled !== false;
+      if(g.fx){ fxState.dur = g.fx.dur ?? 3200; fxState.speed = g.fx.speed ?? 4; fxState.int = g.fx.int ?? 140; }
+
+      const nameBadge = g.name || 'Golf Course';
+      const flightBadge = g.defaultFlight ? ` • Flight ${g.defaultFlight}` : (g.flight ? ` • Flight ${g.flight}` : '');
+      el('gameTitle').textContent = `${nameBadge}${flightBadge}`;
+
+      updateHeader(); updateScoreUI();
+    });
+
+    onSnapshot(doc(db,'games',id,'scores',uid),(snap)=>{
+      if(!snap.exists()) return;
+      me = me || {}; me.holes = snap.data().holes||{};
+      updateScoreUI();
+    });
+
+    // inline speler sync
+    onSnapshot(doc(db,'games',id,'players',uid),(snap)=>{
+      if(snap.exists()){
+        const p=snap.data();
+        el('playerNameInline').value = p.name || '';
+        el('playerHcpInline').value  = p.handicap ?? 0;
+        el('playerFlightInline').value = p.flight || '';
+        el('playerTeeInline').value = p.teeTime || '';
+        updateTopBar();
+      }
+    });
+
+    // Rangorde voor leider-sticker
+    startLeaderboardListeners(id);
+
+    // Event feed (stickers)
+    listenStickerEvents(id);
+  }
+
+  /* ===== Stickers / Effects ===== */
+  function stickerFor(total,par,extra){
+    const d=total-par;
+    if(total===8) return 'snowman';
+    if(extra.putts>=3) return 'three-putt';
+    if(d<=-3) return 'albatross';
+    if(d===-2) return 'eagle';
+    if(d===-1) return 'birdie';
+    if(d===0)  return 'par';
+    if(d===1)  return 'bogey';
+    if(d===2)  return 'double-bogey';
+    if(d>=3)   return 'triple-bogey';
+    return null;
+  }
+  const stickerImg = k=>({
+    'albatross':'assets/albatross.png',
+    'eagle':'assets/eagle.png',
+    'birdie':'assets/birdie.png',
+    'par':'assets/par.png',
+    'bogey':'assets/bogey.png',
+    'double-bogey':'assets/double-bogey.png',
+    'triple-bogey':'assets/triple-bogey.png',
+    'snowman':'assets/snowman.png',
+    'three-putt':'assets/three-putt.png',
+    'mulligan':'assets/mulligan.png'
+  })[k];
+
+  function emojiConfetti(emojis=[]){
+    const c = document.getElementById('confetti'); const ctx = c.getContext('2d');
+    let W = c.width = innerWidth, H = c.height = innerHeight;
+    const pieces = [];
+    const N = Math.max(10, Math.min(400, fxState.int));
+    for(let i=0;i<N;i++){
+      pieces.push({
+        char: emojis[Math.floor(Math.random()*emojis.length)] || '✨',
+        x: Math.random()*W, y: -20 - Math.random()*H,
+        vy: fxState.speed + Math.random()*fxState.speed,
+        vx: (Math.random()-.5)*1.4,
+        rot: Math.random()*Math.PI*2, rSpeed: (Math.random()-.5)*0.06,
+        size: 18 + Math.random()*16
+      });
+    }
+    const end = performance.now()+fxState.dur;
+    function step(){
+      ctx.clearRect(0,0,W,H);
+      for(const p of pieces){
+        p.x+=p.vx; p.y+=p.vy; p.rot+=p.rSpeed;
+        ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot);
+        ctx.font=`${p.size}px system-ui, Apple Color Emoji, Segoe UI Emoji`; ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText(p.char,0,0); ctx.restore();
+        if(p.y>H+50){ p.y=-50; p.x=Math.random()*W; }
+      }
+      if(performance.now()<end){ requestAnimationFrame(step); } else { ctx.clearRect(0,0,W,H); }
+    }
+    step();
+    addEventListener('resize', ()=>{ W=c.width=innerWidth; H=c.height=innerHeight; }, {once:true});
+  }
+
+  function successPop(text){
+    const wrap = document.getElementById('toasts');
+    const t = document.createElement('div'); t.className='toast';
+    t.innerHTML = `<div class="title">${text}</div><div class="muted">H${String(currentHole).padStart(2,'0')}</div>`;
+    wrap.appendChild(t);
+    setTimeout(()=>{ t.style.transition='opacity .3s'; t.style.opacity='0'; setTimeout(()=>t.remove(),300); }, 3500);
+  }
+
+  /* ===== Score interacties ===== */
+  function clearCurrentHolePreserveTime(){
+    const s = strokeState();
+    const cleared = {
+      ...s,
+      strokes: [],
+      putts: 0,
+      penalties: { ball: 0, water: 0, bunker: 0, oob: 0 },
+      total: 0,
+      sticker: null,
+      mulliganUsed: false
+      // startTs, endTs, duration blijven staan
+    };
+    me = me || {}; me.holes = me.holes || {};
+    me.holes[String(currentHole)] = cleared;
+    return cleared;
+  }
+
+  function addStroke(kind){
+    // CLEAR
+    if(kind==='clear'){
+      const ok = confirm('Weet je zeker dat je de score voor deze hole wilt wissen?');
+      if(!ok) return;
+      const cleared = clearCurrentHolePreserveTime();
+      persistHole(cleared);
+      updateScoreUI();
+      return;
+    }
+
+    const s = strokeState();
+    const countable=['D','W','P','3','4','5','6','7','8','9'];
+    if(kind==='P'){ s.putts=(s.putts||0)+1; }
+    if(countable.includes(kind)){
+      if(!s.startTs) s.startTs=Date.now();
+      s.strokes.push(kind); s.total=(s.total||0)+1;
+    }
+    if(kind==='ball'){  s.penalties.ball=(s.penalties.ball||0)+1; s.strokes.push('⚪'); s.total=(s.total||0)+1; if(!s.startTs) s.startTs=Date.now(); }
+    if(kind==='water'){ s.penalties.water=(s.penalties.water||0)+1; s.strokes.push('💧'); s.total=(s.total||0)+1; if(!s.startTs) s.startTs=Date.now(); }
+    if(kind==='bunker'){ s.penalties.bunker=(s.penalties.bunker||0)+1; s.strokes.push('🏜️'); }
+    if(kind==='oob'){ s.penalties.oob=(s.penalties.oob||0)+1; s.strokes.push('🌲'); s.total=(s.total||0)+1; if(!s.startTs) s.startTs=Date.now(); }
+    if(kind==='star'){ s.strokes.push('⭐'); }
+    if(kind==='mulligan'){
+      if(s.mulliganUsed){ alert('Mulligan al gebruikt op deze hole.'); return; }
+      const reversible=['D','W','P','3','4','5','6','7','8','9','⚪','💧'];
+      if(s.strokes.length){
+        const last = s.strokes[s.strokes.length-1];
+        if(reversible.includes(last)){ s.strokes.pop(); s.total=Math.max(0,(s.total||0)-1); }
+        else{ for(let i=s.strokes.length-1;i>=0;i--){ if(reversible.includes(s.strokes[i])){ s.strokes.splice(i,1); s.total=Math.max(0,(s.total||0)-1); break; } } }
+      }
+      s.mulliganUsed=true; s.strokes.push('🎁');
+    }
+
+    me = me || {}; me.holes = me.holes || {}; me.holes[String(currentHole)] = s;
+    updateScoreUI(); persistHole(s);
+  }
+
+  document.querySelectorAll('[data-club]').forEach(b=>b.onclick=()=>addStroke(b.dataset.club));
+  document.querySelectorAll('[data-special]').forEach(b=>b.onclick=()=>addStroke(b.dataset.special));
+
+  async function broadcastSticker(hole, playerName, key){
+    if(!shareEnabled) return;
+    await addDoc(collection(db,'games',gameId,'events'), {type:'sticker', hole, playerName, sticker:key, at:serverTimestamp()});
+  }
+
+  document.getElementById('flagBtn').onclick = async ()=>{
+    const s = strokeState();
+    if(!s.strokes.includes('⛳')) s.strokes.push('⛳');
+    if(!s.startTs) s.startTs = Date.now();
+    if(!s.endTs){ s.endTs = Date.now(); s.duration = Math.floor((s.endTs - s.startTs)/1000); }
+
+    const par = holesData[currentHole]?.par ?? 0;
+    const key = stickerFor(s.total, par, s);
+    if(key){
+      s.sticker=key;
+      const img=document.getElementById('stickerImg'); const src=stickerImg(key); if(src){ img.src=src; img.style.display='block'; }
+      const playerDoc = await getDoc(doc(db,'games',gameId,'players',uid));
+      const playerName = playerDoc.exists()? (playerDoc.data().name||'Player') : 'Player';
+
+      await broadcastSticker(currentHole, playerName, key);
+      successPop(`${playerName} heeft ${key.replace(/-/g,' ')}!`);
+      // Positieve confetti only
+      if(key==='eagle') emojiConfetti(['👑','🪩','🎉']);
+      else if(key==='birdie') emojiConfetti(['⭐','✨','🌟']);
+      else if(key==='par') emojiConfetti(['🪩','✨']);
+    }
+
+    me = me || {}; me.holes = me.holes || {}; me.holes[String(currentHole)] = s;
+    await persistHole(s);
+    updateScoreUI();
+
+    const [sH,eH]=rangeBounds();
+    currentHole = currentHole<eH ? currentHole+1 : sH;
+    updateHeader(); updateScoreUI();
+  };
+
+  document.getElementById('prevHole').onclick = ()=>{ const[sH,eH]=rangeBounds(); currentHole = currentHole>sH ? currentHole-1 : eH; updateHeader(); updateScoreUI(); };
+  document.getElementById('nextHole').onclick = ()=>{ const[sH,eH]=rangeBounds(); currentHole = currentHole<eH ? currentHole+1 : sH; updateHeader(); updateScoreUI(); };
+
+  /* ===== Leaderboard data (alleen voor leader-sticker) ===== */
+  function parSumForRange(holes,start,end){ let sum=0; for(let h=start; h<=end; h++) sum += Number(holes?.[h]?.par||4); return sum; }
+  function grossForRange(holesObj,start,end){ let gross=0; for(let h=start; h<=end; h++) gross += Number(holesObj?.[String(h)]?.total||0); return gross; }
+  function durationForRange(holesObj,start,end){ let sum=0; for(let h=start; h<=end; h++) sum += Number(holesObj?.[String(h)]?.duration||0); return sum; }
+  function finishedCount(holesObj,start,end){ let n=0; for(let h=start; h<=end; h++) if(holesObj?.[String(h)]?.endTs) n++; return n; }
+  const rangeBoundsFrom = rg => rg==='10-18'?[10,18]:rg==='1-9'?[1,9]:[1,18];
+
+  function recomputeLbOrder(){
+    const [start,end] = rangeBoundsFrom(holeRange);
+    const parSum = parSumForRange(holesData, start, end);
+    const rows = Object.entries(LB.scores).map(([uid_, sdoc])=>{
+      const holes = sdoc?.holes||{};
+      const p = LB.players[uid_] || {};
+      const gross = grossForRange(holes,start,end);
+      const hcp = Number(p.handicap||0);
+      const net = gross - hcp;
+      const dur = durationForRange(holes,start,end);
+      return { uid:uid_, name:p.name||'—', net, gross, dur };
+    });
+    rows.sort((a,b)=> a.net-b.net || a.gross-b.gross || a.dur-b.dur || a.name.localeCompare(b.name));
+    lbOrder = rows.map(r=>({uid:r.uid, name:r.name}));
+    lbIndex = 0;
+    renderLeaderStickerForHole(currentHole);
+  }
+
+  function startLeaderboardListeners(id){
+    onSnapshot(collection(db,'games',id,'players'), snap=>{ LB.players = {}; snap.forEach(d=> LB.players[d.id]=d.data()); recomputeLbOrder(); });
+    onSnapshot(collection(db,'games',id,'scores'), snap=>{ LB.scores = {}; snap.forEach(d=> LB.scores[d.id]=d.data()); recomputeLbOrder(); });
+  }
+
+  function renderLeaderStickerForHole(hole){
+    const box = el('stickerBoxLeader'); const img=el('stickerImgLeader'); const cap=el('stickerCapLeader');
+    if(!lbOrder.length){ img.style.display='none'; cap.textContent = '#1 Leader'; return; }
+    const sel = lbOrder[lbIndex] || lbOrder[0];
+    const holes = (LB.scores[sel.uid]?.holes)||{};
+    const k = holes[String(hole)]?.sticker || null;
+    if(k){ img.src = stickerImg(k)||''; img.style.display='block'; cap.textContent = sel.name; }
+    else { img.style.display='none'; cap.textContent = sel.name; }
+  }
+  (function bindLeaderBox(){
+    let pressTimer=null; const box = el('stickerBoxLeader');
+    box.addEventListener('click', ()=>{ if(!lbOrder.length) return; lbIndex = (lbIndex+1) % lbOrder.length; renderLeaderStickerForHole(currentHole); });
+    box.addEventListener('mousedown', ()=>{ clearTimeout(pressTimer); pressTimer=setTimeout(()=>{ lbIndex = 0; renderLeaderStickerForHole(currentHole); }, 650); });
+    box.addEventListener('mouseup',   ()=> clearTimeout(pressTimer));
+    box.addEventListener('mouseleave',()=> clearTimeout(pressTimer));
+  })();
+
+  /* ===== Event feed (stickers van anderen) ===== */
+  function toast(msg){
+    const wrap = el('toasts'); if(!wrap) return;
+    const t = document.createElement('div'); t.className='toast';
+    t.innerHTML = `<div class="title">${msg.title||''}</div><div class="muted">${msg.body||''}</div>`;
+    wrap.appendChild(t);
+    setTimeout(()=>{ t.style.transition='opacity .3s'; t.style.opacity='0'; setTimeout(()=>t.remove(),300); }, 4500);
+  }
+  function listenStickerEvents(id){
+    const qEv = query(collection(db,'games',id,'events'));
+    onSnapshot(qEv, (snap)=>{
+      snap.docChanges().forEach(ch=>{
+        if(ch.type!=='added') return;
+        const e = ch.doc.data();
+        if(e.type==='sticker'){
+          const label = (e.sticker||'').replace(/-/g,' ');
+          toast({ title:`${e.playerName||'Speler'} heeft ${label}!`, body:`Hole H${String(e.hole||'?').padStart(2,'0')}` });
+        }
+      });
+    });
+  }
+
+  /* ===== INIT ===== */
+  holesData = blankHoles();
+  updateHeader(); updateScoreUI();
+
+  // Inline speler updates
+  el('playerNameInline').addEventListener('change', async ()=>{ if(!gameId||!uid) return; const name = el('playerNameInline').value.trim(); await setDoc(doc(db,'games',gameId,'players',uid), {name}, {merge:true}); updateTopBar(); });
+  el('playerHcpInline').addEventListener('change', async ()=>{ if(!gameId||!uid) return; const handicap = Number(el('playerHcpInline').value||0); await setDoc(doc(db,'games',gameId,'players',uid), {handicap}, {merge:true}); });
+  el('playerFlightInline').addEventListener('change', async ()=>{ if(!gameId||!uid) return; const flight = el('playerFlightInline').value.trim(); await setDoc(doc(db,'games',gameId,'players',uid), {flight}, {merge:true}); });
+  el('playerTeeInline').addEventListener('change', async ()=>{ if(!gameId||!uid) return; const teeTime = el('playerTeeInline').value || null; await setDoc(doc(db,'games',gameId,'players',uid), {teeTime}, {merge:true}); updateTopBar(); });
+
+  // Ticker om tijd bovenin te verversen
+  setInterval(()=>{ updateTimeUI(strokeState()); }, 1000);
+  </script>
+</body>
+</html>
